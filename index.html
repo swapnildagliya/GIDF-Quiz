@@ -131,6 +131,9 @@
   .lockout b{display:block;font-size:18px;font-family:'Hind';margin-bottom:6px}
   /* Test-mode badge — only shown when ?test=1 is in URL */
   .test-badge{position:fixed;top:max(8px, env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:var(--gold);color:#fff;padding:6px 14px;border-radius:99px;font:700 10.5px 'Inter';letter-spacing:.06em;text-transform:uppercase;z-index:99;box-shadow:0 4px 12px rgba(196,132,26,.35);max-width:92vw;text-align:center}
+  /* Plays-remaining indicator */
+  .plays-strip{padding:10px 14px;background:rgba(196,132,26,.10);border-left:3px solid var(--gold);border-radius:var(--r-sm);font-size:13.5px;font-weight:600;color:var(--text);line-height:1.4}
+  .plays-strip b{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -173,8 +176,8 @@
       <div class="rule">
         <span class="ico">3</span>
         <div>
-          <strong>One go per person</strong>
-          <span>You can't replay. Pick your moment, take a deep breath, and dive in.</span>
+          <strong>5 tries per person · 1 voucher max</strong>
+          <span>Up to 5 attempts across the weekend. Even if you smash 10/10 twice, only one voucher is issued per IG handle.</span>
         </div>
       </div>
       <div class="rule">
@@ -221,9 +224,13 @@
       <span><b>Need more time?</b> Use 30 seconds per question instead of 10. (Same scoring, no voucher penalty.)</span>
     </label>
 
+    <div id="plays-remaining" class="plays-strip" style="display:none">
+      <span id="plays-text">You have 5 tries left this weekend.</span>
+    </div>
+
     <div id="lockout-existing" class="lockout" style="display:none" role="alert">
-      <b>You've already played this weekend.</b>
-      One quiz per person — that's the deal. Hand the QR to a friend and watch them sweat.
+      <b>You've used all 5 attempts.</b>
+      That's the cap. Hand the QR to a friend and watch them sweat.
     </div>
 
     <button id="btn-name-go" class="btn btn-primary">Start the clock &nbsp;→</button>
@@ -292,10 +299,11 @@
 
     <button id="btn-share" class="btn btn-primary">📲 Share to Instagram Stories</button>
     <button id="btn-save" class="btn btn-ghost">⬇ Save image instead</button>
-    <a id="btn-tag" class="btn btn-dark" href="https://instagram.com/gentindiadansfestival" target="_blank">Tag @gentindiadansfestival</a>
+    <button id="btn-replay" class="btn btn-dark" style="display:none">↺ Play again</button>
+    <a id="btn-tag" class="btn btn-ghost" href="https://instagram.com/gentindiadansfestival" target="_blank">Tag @gentindiadansfestival</a>
 
     <div class="foot">
-      Pass the QR to a friend — every quiz is different.<br/>
+      <span id="replay-foot">Pass the QR to a friend — every quiz is different.</span><br/>
       <a href="https://gidf.abcdans.com" target="_blank">gidf.abcdans.com ↗</a>
     </div>
   </section>
@@ -316,6 +324,7 @@
    ========================================================================= */
 (function(){
   const Q_PER_SESSION = 10;
+  const MAX_PLAYS = 5;          // each student can play the full quiz this many times
   const TIMER_DEFAULT  = 10;
   const TIMER_EXTENDED = 30;  // WCAG 2.2.1 — opt-in via checkbox on name screen
   let   timerSeconds   = TIMER_DEFAULT;
@@ -323,9 +332,28 @@
   const WIN_SCORE = 10;
   const STORAGE_KEY = 'gidf_quiz_v1';
 
-  // ----- TEST MODE: ?test=1 in URL → unlimited retries, no Supabase write -----
-  const TEST_MODE = new URLSearchParams(window.location.search).get('test') === '1';
-  if(TEST_MODE) console.log('GIDF Quiz: TEST MODE active — retries unlocked, voucher claims faked.');
+  // ----- TEST MODE -----
+  // Enabled by either:
+  //   (a) ?test=1 in the URL, or
+  //   (b) the IG handle matching one of TEST_HANDLES below (case-insensitive)
+  // Test mode → unlimited replays, voucher-claim is faked (real stock untouched).
+  const TEST_HANDLES = ['swapkebolly']; // add more if you give other testers backstage access
+  let TEST_MODE = new URLSearchParams(window.location.search).get('test') === '1';
+  function isTestHandle(ig){
+    return TEST_HANDLES.includes(((ig||'').toLowerCase().replace(/^@/,'')));
+  }
+  function enableTestMode(reason){
+    if(TEST_MODE) return;
+    TEST_MODE = true;
+    console.log('GIDF Quiz: TEST MODE active —', reason);
+    if(!document.querySelector('.test-badge')){
+      const b = document.createElement('div');
+      b.className = 'test-badge';
+      b.textContent = 'TEST MODE · retries unlocked · vouchers not issued';
+      document.body.appendChild(b);
+    }
+  }
+  if(TEST_MODE) console.log('GIDF Quiz: TEST MODE active via ?test=1');
 
   const $ = (id) => document.getElementById(id);
   const screens = ['landing','name','quiz','result'];
@@ -349,13 +377,35 @@
   function savePlayer(p){
     localStorage.setItem(STORAGE_KEY+':player', JSON.stringify(p));
   }
+  function getPlayState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY+':done');
+      if(!raw) return { count:0 };
+      const data = JSON.parse(raw);
+      // Migrate legacy single-play record { score, at } → { count:1, ... }
+      if(typeof data.count !== 'number'){
+        return { count: data.score!=null ? 1 : 0, lastScore:data.score, lastAt:data.at };
+      }
+      return data;
+    } catch(e){ return { count:0 }; }
+  }
+  function playsRemaining(){
+    if(TEST_MODE) return Infinity;
+    return Math.max(0, MAX_PLAYS - getPlayState().count);
+  }
   function hasPlayed(){
     if(TEST_MODE) return false; // unlimited retries in test mode
-    return !!localStorage.getItem(STORAGE_KEY+':done');
+    return getPlayState().count >= MAX_PLAYS;
   }
   function markPlayed(score){
     if(TEST_MODE) return; // never persist in test mode
-    localStorage.setItem(STORAGE_KEY+':done', JSON.stringify({score, at: Date.now()}));
+    const prev = getPlayState();
+    const next = {
+      count: (prev.count||0) + 1,
+      lastScore: score,
+      lastAt: Date.now()
+    };
+    localStorage.setItem(STORAGE_KEY+':done', JSON.stringify(next));
   }
 
   // -------- QUESTIONS --------
@@ -611,40 +661,90 @@
       total: Q_PER_SESSION,
       isWinner: session.score === WIN_SCORE
     });
+
+    // Show "Play again" button if they still have attempts
+    const remaining = playsRemaining();
+    const replayBtn = $('btn-replay');
+    const replayFoot = $('replay-foot');
+    if(remaining > 0){
+      replayBtn.style.display = 'flex';
+      replayBtn.textContent = TEST_MODE
+        ? '↺ Play again (test mode)'
+        : (remaining === 1 ? '↺ One last try' : `↺ Play again · ${remaining} tries left`);
+      if(replayFoot) replayFoot.textContent = "Try again with a fresh question set, or pass the QR to a friend.";
+    } else {
+      replayBtn.style.display = 'none';
+      if(replayFoot) replayFoot.textContent = "All 5 tries used. Pass the QR to a friend — every quiz is different.";
+    }
   }
 
   // -------- INIT / WIRES --------
+  function refreshPlaysIndicator(){
+    const remaining = playsRemaining();
+    const stripEl = $('plays-remaining');
+    const txtEl = $('plays-text');
+    if(TEST_MODE || remaining === MAX_PLAYS || remaining === Infinity){
+      stripEl.style.display = 'none';
+      return;
+    }
+    stripEl.style.display = 'block';
+    if(remaining === 0){
+      txtEl.innerHTML = '<b>0 tries left.</b> You can keep watching, but no more quizzes.';
+    } else if(remaining === 1){
+      txtEl.innerHTML = '<b>1 last try</b> remaining this weekend. Make it count.';
+    } else {
+      txtEl.innerHTML = `<b>${remaining} tries left</b> this weekend. Have another go?`;
+    }
+  }
   function init(){
-    // Show test-mode badge if active
+    // Show test-mode badge if URL flag set
     if(TEST_MODE){
       const b = document.createElement('div');
       b.className = 'test-badge';
       b.textContent = 'TEST MODE · retries unlocked · vouchers not issued';
       document.body.appendChild(b);
     }
-    if(hasPlayed()){
-      // Already played → straight to result-style lock
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY+':done')||'{}');
-      const player = getStoredPlayer();
-      if(player){
-        session = { questions:[], idx:0, score: stored.score||0, answered:true, locked:true, player };
-        finish();
-        return;
-      }
-    }
-    // Otherwise, landing
+    // Always start at landing — refreshing the page lets you replay (up to MAX_PLAYS)
     show('landing');
     $('btn-start').addEventListener('click', () => {
       const player = getStoredPlayer();
       if(player){
         $('in-name').value = player.name || '';
         $('in-ig').value = player.ig || '';
+        // Auto-enable test mode for known test handles (e.g. Swapnil's @swapkebolly)
+        if(isTestHandle(player.ig)) enableTestMode('IG handle is a registered tester');
       }
+      refreshPlaysIndicator();
+      // If they've burned all 5 attempts, show the lockout block on the name screen
+      $('lockout-existing').style.display = hasPlayed() ? 'block' : 'none';
       show('name');
     });
     $('btn-name-go').addEventListener('click', startQuiz);
     $('btn-share').addEventListener('click', () => GIDFShare.share());
     $('btn-save').addEventListener('click', () => GIDFShare.save());
+    $('btn-replay').addEventListener('click', () => {
+      // Reset session, reuse stored player + go straight to quiz
+      const player = getStoredPlayer();
+      if(!player || hasPlayed()){ show('landing'); return; }
+      // Hide voucher / oos blocks if visible from prior round
+      $('voucher-block').style.display = 'none';
+      $('oos-block').style.display = 'none';
+      $('btn-replay').style.display = 'none';
+      session = {
+        questions: pickSession(pool),
+        idx: 0, score: 0, answered: false, locked: false,
+        player
+      };
+      show('quiz');
+      renderQuestion();
+    });
+    // Re-evaluate test mode on IG-input changes (so Swapnil typing 'swapkebolly' flips the badge live)
+    const igEl = $('in-ig');
+    if(igEl){
+      igEl.addEventListener('input', () => {
+        if(isTestHandle(igEl.value)) enableTestMode('IG handle is a registered tester');
+      });
+    }
   }
 
   async function startQuiz(){
@@ -653,6 +753,8 @@
     let ig = $('in-ig').value.trim().replace(/\s+/g,'').replace(/^@/,'').replace(/[^A-Za-z0-9._]/g,'');
     if(name.length < 1){ $('in-name').focus(); $('in-name').style.borderColor='var(--red)'; return; }
     if(ig.length < 2){ $('in-ig').focus(); $('in-ig').style.borderColor='var(--red)'; return; }
+    // Final test-mode check on submit (handle could have changed after the input listener fired)
+    if(isTestHandle(ig)) enableTestMode('IG handle is a registered tester');
     if(hasPlayed()){
       $('lockout-existing').style.display = 'block';
       return;
