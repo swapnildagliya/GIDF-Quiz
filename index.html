@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#B5421A" />
+<title>GIDF 2026 Quiz · Earn Your Drink</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Hind:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F0E6; --surface:#FFFDF8; --dark:#0A0A14;
+    --accent:#B5421A; --accent-dark:#8C3214; --gold:#C4841A;
+    --text:#1C1108; --t2:#6B5840; --t3:#5C4D38;
+    --border:#E0D5C4; --green:#4A7C59; --gtint:#EDF5F1; --nav-dark:#0D0828;
+    --red:#C03030; --red-tint:#FCEDED; --red-border:#F4C5C5; --red-deep:#7A1B1B;
+    --r-sm:8px; --r-md:14px; --r-lg:22px;
+    --shadow-1: 0 1px 2px rgba(28,17,8,.08);
+    --shadow-2: 0 8px 24px rgba(28,17,8,.12);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;overscroll-behavior-y:none}
+  body{min-height:100dvh;display:flex;flex-direction:column;align-items:center}
+  .app{width:100%;max-width:480px;min-height:100dvh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+  .screen{display:none;flex:1;flex-direction:column;padding:24px 22px 28px;gap:18px;animation:fadeIn .35s ease both}
+  .screen.active{display:flex}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  @media (prefers-reduced-motion: reduce){
+    .screen, .factcard.show{animation:none}
+    .btn:active, .opt:active{transform:none}
+    .progress > i, .timer-ring .fg{transition:none}
+  }
+  /* === HEADER === */
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Hind',serif;font-weight:700;color:var(--accent);font-size:18px;letter-spacing:-.01em}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(181,66,26,.18)}
+  .brand small{color:var(--t2);font-family:'Inter';font-weight:500;font-size:12px;letter-spacing:.04em;text-transform:uppercase;margin-left:auto}
+  /* === LANDING === */
+  .hero{margin-top:6px}
+  .hero h1{font-family:'Hind';font-weight:700;font-size:38px;line-height:1.05;margin:0 0 10px;letter-spacing:-.02em}
+  .hero h1 em{color:var(--accent);font-style:normal}
+  .hero p{margin:0;color:var(--t2);font-size:16px;line-height:1.5}
+  .rules{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow-1)}
+  .rule{display:flex;gap:12px;align-items:flex-start}
+  .rule .ico{flex-shrink:0;width:32px;height:32px;border-radius:50%;background:rgba(181,66,26,.10);color:var(--accent);display:grid;place-items:center;font-weight:700;font-size:14px;font-family:'Hind'}
+  .rule strong{display:block;font-size:14.5px;letter-spacing:-.005em}
+  .rule span{display:block;color:var(--t2);font-size:13.5px;line-height:1.45;margin-top:2px}
+  .prize-strip{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--r-md);background:linear-gradient(135deg,#0D0828 0%,#2A1450 100%);color:#fff;box-shadow:var(--shadow-2)}
+  .prize-strip .glyph{font-size:22px}
+  .prize-strip strong{display:block;font-size:14px;font-weight:700;letter-spacing:-.005em}
+  .prize-strip span{display:block;font-size:12.5px;color:rgba(255,255,255,.72);margin-top:2px}
+  /* === FORMS === */
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:12.5px;font-weight:600;color:var(--t2);letter-spacing:.04em;text-transform:uppercase}
+  .field input{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--surface);font:600 16px 'Inter',sans-serif;color:var(--text);transition:border .15s, box-shadow .15s}
+  .field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(181,66,26,.15)}
+  .field .hint{font-size:12px;color:var(--t3)}
+  /* === BUTTONS === */
+  .btn{appearance:none;border:0;width:100%;padding:16px 18px;border-radius:var(--r-md);font:700 16px 'Inter',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .12s ease, background .15s ease;letter-spacing:.005em}
+  .btn:active{transform:scale(.98)}
+  .btn:focus-visible, .opt:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:var(--accent-dark)}
+  .btn-primary:disabled{background:#C9B8A4;cursor:not-allowed}
+  .btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--text)}
+  .btn-dark{background:var(--nav-dark);color:#fff}
+  /* Time-extension toggle (WCAG 2.2.1) */
+  .time-toggle{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1.5px dashed var(--border);border-radius:var(--r-md);background:rgba(196,132,26,.05);cursor:pointer;font-size:14px;color:var(--t2);line-height:1.4}
+  .time-toggle input{width:18px;height:18px;margin-top:2px;accent-color:var(--accent);flex-shrink:0}
+  .time-toggle:hover{border-color:var(--gold)}
+  .time-toggle b{color:var(--text);font-weight:700}
+  /* === QUIZ === */
+  .top-bar{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .progress{flex:1;height:6px;background:var(--border);border-radius:99px;overflow:hidden}
+  .progress > i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s ease;width:10%}
+  .qcount{font:700 13px 'Hind';color:var(--t2);min-width:40px;text-align:right;letter-spacing:.04em}
+  .timer-wrap{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 14px}
+  .timer-ring{position:relative;width:34px;height:34px;flex-shrink:0}
+  .timer-ring svg{transform:rotate(-90deg);width:34px;height:34px}
+  .timer-ring circle{fill:none;stroke-width:4}
+  .timer-ring .bg{stroke:var(--border)}
+  .timer-ring .fg{stroke:var(--accent);stroke-linecap:round;stroke-dasharray:88;stroke-dashoffset:0;transition:stroke-dashoffset 1s linear, stroke .3s}
+  .timer-ring.warn .fg{stroke:var(--gold)}
+  .timer-ring.danger .fg{stroke:var(--red)}
+  .timer-num{font:800 18px 'Hind';color:var(--text);min-width:28px}
+  .timer-label{font-size:12px;color:var(--t2);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-left:auto}
+  .qcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px 22px;box-shadow:var(--shadow-1);flex-shrink:0}
+  .qtag{display:inline-block;font:700 10.5px 'Inter';letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:rgba(181,66,26,.10);padding:4px 9px;border-radius:99px;margin-bottom:10px}
+  .qtag.gk{color:var(--green);background:var(--gtint)}
+  .qtag.hard{color:#7C3AED;background:rgba(124,58,237,.10)}
+  .qtext{font:600 21px/1.3 'Hind';letter-spacing:-.01em;margin:0}
+  .options{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+  .opt{appearance:none;border:1.5px solid var(--border);background:var(--surface);text-align:left;padding:15px 16px;border-radius:var(--r-md);font:600 15.5px 'Inter';color:var(--text);cursor:pointer;display:flex;align-items:center;gap:12px;transition:border-color .15s, background .2s}
+  .opt:hover{border-color:var(--accent)}
+  .opt .letter{flex-shrink:0;width:28px;height:28px;border-radius:50%;background:rgba(28,17,8,.06);color:var(--t2);font:700 13px 'Hind';display:grid;place-items:center}
+  .opt.correct{border-color:var(--green);background:var(--gtint)}
+  .opt.correct .letter{background:var(--green);color:#fff}
+  .opt.wrong{border-color:var(--red);background:var(--red-tint)}
+  .opt.wrong .letter{background:var(--red);color:#fff}
+  .opt.dim{opacity:.45;pointer-events:none}
+  .opt:disabled{cursor:default}
+  .factcard{margin-top:14px;padding:14px 16px;border-radius:var(--r-md);background:rgba(196,132,26,.08);border-left:3px solid var(--gold);font-size:14.5px;line-height:1.5;color:var(--text);display:none;animation:fadeIn .25s}
+  .factcard.show{display:block}
+  .factcard b{color:var(--accent)}
+  /* === RESULT === */
+  .scoreblock{text-align:center;padding:28px 16px 24px}
+  .score-num{font:900 96px/1 'Hind';color:var(--accent);letter-spacing:-.04em}
+  .score-num em{color:var(--t2);font-style:normal;font-weight:700}
+  .score-label{font:700 13px 'Inter';color:var(--t2);letter-spacing:.06em;text-transform:uppercase;margin-top:6px}
+  .score-msg{margin-top:18px;font:700 22px/1.25 'Hind';letter-spacing:-.01em}
+  .score-sub{margin-top:8px;color:var(--t2);font-size:15px;line-height:1.5}
+  .voucher{margin:18px 0 4px;padding:26px 22px;border-radius:var(--r-lg);background:var(--accent);color:#fff;text-align:center;box-shadow:var(--shadow-2)}
+  .voucher-tag{font:800 11px 'Inter';letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+  .voucher-headline{font:700 26px/1.2 'Hind';margin:6px 0 14px}
+  .voucher-code{display:inline-block;padding:14px 20px;background:rgba(0,0,0,.22);border:1px dashed rgba(255,255,255,.55);border-radius:var(--r-md);font:900 32px 'Hind';letter-spacing:.18em;font-feature-settings:'tnum'}
+  .voucher-foot{font-size:12.5px;opacity:.85;margin-top:14px;line-height:1.45}
+  .out-of-stock{padding:18px 18px;border-radius:var(--r-md);background:var(--red-tint);border:1px solid var(--red-border);color:var(--red-deep);font-size:14px;line-height:1.5;margin-top:12px}
+  .out-of-stock b{font-weight:700}
+  /* === SHARE === */
+  .share-card{margin:20px auto 8px;width:100%;aspect-ratio:9/16;max-height:520px;background:linear-gradient(160deg,var(--nav-dark) 0%,var(--accent) 100%);border-radius:var(--r-lg);box-shadow:var(--shadow-2);position:relative;overflow:hidden;color:#fff}
+  /* === FOOTER === */
+  .foot{margin-top:auto;padding-top:24px;text-align:center;font-size:12px;color:var(--t3);line-height:1.5}
+  .foot a{color:var(--accent);text-decoration:none;font-weight:600}
+  /* === MISC === */
+  .row{display:flex;gap:10px}
+  .row > *{flex:1}
+  .center{text-align:center}
+  .pill{display:inline-block;padding:6px 12px;border-radius:99px;background:var(--surface);border:1px solid var(--border);font:600 12px 'Inter';color:var(--t2);letter-spacing:.04em;text-transform:uppercase}
+  .lockout{padding:22px;text-align:center;background:var(--red-tint);border:1px solid var(--red-border);border-radius:var(--r-md);color:var(--red-deep)}
+  .lockout b{display:block;font-size:18px;font-family:'Hind';margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- =========== LANDING =========== -->
+  <section id="screen-landing" class="screen active">
+    <header class="brand">
+      <span class="dot"></span> GIDF 2026 Quiz <small>1–3 May · Shoonya</small>
+    </header>
+
+    <div class="hero">
+      <h1>Earn your <em>drink.</em><br/>10 questions. 10 seconds each.</h1>
+      <p>A speed-trivia challenge across Indian dance, Bollywood, and GIDF itself. Get every single question right and a free drink at the bar is yours — while stocks last.</p>
+    </div>
+
+    <div class="prize-strip">
+      <span class="glyph">🥂</span>
+      <div>
+        <strong>10 free drinks · all weekend</strong>
+        <span>Perfect score = 1 voucher. Once they're gone, they're gone.</span>
+      </div>
+    </div>
+
+    <div class="rules">
+      <div class="rule">
+        <span class="ico">1</span>
+        <div>
+          <strong>10 questions, 10 seconds each</strong>
+          <span>No going back. No skipping. No Googling — the timer's faster than you are.</span>
+        </div>
+      </div>
+      <div class="rule">
+        <span class="ico">2</span>
+        <div>
+          <strong>Random questions per session</strong>
+          <span>Drawn fresh from a pool of 100 — your friends will get a different quiz.</span>
+        </div>
+      </div>
+      <div class="rule">
+        <span class="ico">3</span>
+        <div>
+          <strong>One go per person</strong>
+          <span>You can't replay. Pick your moment, take a deep breath, and dive in.</span>
+        </div>
+      </div>
+      <div class="rule">
+        <span class="ico">4</span>
+        <div>
+          <strong>Win = 10/10. Voucher live on this screen.</strong>
+          <span>Show the code at the bar. We'll mark it redeemed.</span>
+        </div>
+      </div>
+    </div>
+
+    <button id="btn-start" class="btn btn-primary">Let's go &nbsp;→</button>
+
+    <div class="foot">
+      Win or lose — the goal is learning. Have fun.<br/>
+      Tag <a href="https://instagram.com/gentindiadansfestival" target="_blank">@gentindiadansfestival</a> when you share your score.
+    </div>
+  </section>
+
+  <!-- =========== NAME CAPTURE =========== -->
+  <section id="screen-name" class="screen">
+    <header class="brand">
+      <span class="dot"></span> GIDF 2026 Quiz <small>Step 1 of 2</small>
+    </header>
+
+    <div class="hero">
+      <h1>Quick — <em>who's playing?</em></h1>
+      <p>So we can tag you in the share card and check you're not double-dipping if you win.</p>
+    </div>
+
+    <div class="field">
+      <label for="in-name">Your first name</label>
+      <input id="in-name" type="text" autocomplete="given-name" maxlength="40" placeholder="e.g. Sara" />
+    </div>
+
+    <div class="field">
+      <label for="in-ig">Instagram handle</label>
+      <input id="in-ig" type="text" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="40" pattern="[A-Za-z0-9._]+" placeholder="@yourhandle" />
+      <span class="hint">We use this to tag your Story. Nothing else.</span>
+    </div>
+
+    <label class="time-toggle" for="in-time">
+      <input type="checkbox" id="in-time" />
+      <span><b>Need more time?</b> Use 30 seconds per question instead of 10. (Same scoring, no voucher penalty.)</span>
+    </label>
+
+    <div id="lockout-existing" class="lockout" style="display:none" role="alert">
+      <b>You've already played this weekend.</b>
+      One quiz per person — that's the deal. Hand the QR to a friend and watch them sweat.
+    </div>
+
+    <button id="btn-name-go" class="btn btn-primary">Start the clock &nbsp;→</button>
+
+    <div class="foot">
+      We don't keep emails. Just first name + IG, stored locally + on our scoreboard.
+    </div>
+  </section>
+
+  <!-- =========== QUIZ =========== -->
+  <section id="screen-quiz" class="screen">
+    <div class="top-bar">
+      <div class="progress" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="10" aria-valuenow="1"><i id="progress-bar"></i></div>
+      <div class="qcount" id="qcount">1/10</div>
+    </div>
+    <div class="timer-wrap" aria-hidden="true">
+      <div class="timer-ring" id="timer-ring">
+        <svg viewBox="0 0 34 34"><circle class="bg" cx="17" cy="17" r="14"/><circle class="fg" cx="17" cy="17" r="14"/></svg>
+      </div>
+      <div class="timer-num" id="timer-num">10</div>
+      <div class="timer-label">seconds left</div>
+    </div>
+    <div id="timer-sr" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+    <article class="qcard">
+      <span id="q-tag" class="qtag">GIDF 2026</span>
+      <p id="q-text" class="qtext" aria-live="polite">Loading…</p>
+      <div id="q-options" class="options" role="group" aria-label="Answer choices"></div>
+      <div id="q-fact" class="factcard" role="status" aria-live="polite"></div>
+    </article>
+
+    <div id="next-wrap" style="display:none">
+      <button id="btn-next" class="btn btn-primary">Next question &nbsp;→</button>
+    </div>
+  </section>
+
+  <!-- =========== RESULT =========== -->
+  <section id="screen-result" class="screen">
+    <header class="brand">
+      <span class="dot"></span> GIDF 2026 Quiz <small>Result</small>
+    </header>
+
+    <div class="scoreblock">
+      <div class="score-num"><span id="score-final">0</span><em>/10</em></div>
+      <div class="score-label" id="score-label">Quiz complete</div>
+      <div class="score-msg" id="score-msg" role="status" aria-live="polite">Nice run.</div>
+      <div class="score-sub" id="score-sub">You learned something — that's the real win.</div>
+    </div>
+
+    <!-- Voucher (winners only) -->
+    <div id="voucher-block" class="voucher" style="display:none" role="status" aria-live="polite">
+      <div class="voucher-tag">🥂 You won · Free drink at the bar</div>
+      <div class="voucher-headline">Show this code at the bar</div>
+      <div class="voucher-code" id="voucher-code">——————</div>
+      <div class="voucher-foot">Single use · Bar staff types it · Expires Sun 3 May 23:00</div>
+    </div>
+
+    <!-- Almost (10/10 but stock gone) -->
+    <div id="oos-block" class="out-of-stock" style="display:none">
+      <b>10/10 — but the 10 vouchers are already claimed.</b>
+      You still smashed it. Show the bar staff anyway — they might toast you.
+    </div>
+
+    <!-- Share card preview canvas -->
+    <canvas id="share-canvas" class="share-card" width="1080" height="1920"></canvas>
+
+    <button id="btn-share" class="btn btn-primary">📲 Share to Instagram Stories</button>
+    <button id="btn-save" class="btn btn-ghost">⬇ Save image instead</button>
+    <a id="btn-tag" class="btn btn-dark" href="https://instagram.com/gentindiadansfestival" target="_blank">Tag @gentindiadansfestival</a>
+
+    <div class="foot">
+      Pass the QR to a friend — every quiz is different.<br/>
+      <a href="https://gidf.abcdans.com" target="_blank">gidf.abcdans.com ↗</a>
+    </div>
+  </section>
+
+</div>
+
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase.js"></script>
+<script src="share-card.js"></script>
+<script>
+/* =========================================================================
+   GIDF Quiz — App Logic
+   - 10 questions per session, drawn from /questions.json (pool of 100)
+   - 10s timer per question (Date.now() based, blur-resistant)
+   - Anti-cheat: tab-blur penalty, localStorage device-id, IG handle dedupe
+   - Win condition: 10/10 → atomic Supabase claim (max 10 vouchers)
+   ========================================================================= */
+(function(){
+  const Q_PER_SESSION = 10;
+  const TIMER_DEFAULT  = 10;
+  const TIMER_EXTENDED = 30;  // WCAG 2.2.1 — opt-in via checkbox on name screen
+  let   timerSeconds   = TIMER_DEFAULT;
+  const BLUR_FORFEIT_MS = 2000; // tab-hidden >2s = current question forfeit
+  const WIN_SCORE = 10;
+  const STORAGE_KEY = 'gidf_quiz_v1';
+
+  const $ = (id) => document.getElementById(id);
+  const screens = ['landing','name','quiz','result'];
+  function show(name){
+    screens.forEach(s => $('screen-'+s).classList.toggle('active', s===name));
+    window.scrollTo({top:0,behavior:'instant'});
+  }
+
+  // -------- DEVICE / SESSION STATE --------
+  function getDeviceId(){
+    let id = localStorage.getItem(STORAGE_KEY+':device');
+    if(!id){
+      id = 'd_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+      localStorage.setItem(STORAGE_KEY+':device', id);
+    }
+    return id;
+  }
+  function getStoredPlayer(){
+    try{ return JSON.parse(localStorage.getItem(STORAGE_KEY+':player')||'null'); }catch(e){ return null; }
+  }
+  function savePlayer(p){
+    localStorage.setItem(STORAGE_KEY+':player', JSON.stringify(p));
+  }
+  function hasPlayed(){
+    return !!localStorage.getItem(STORAGE_KEY+':done');
+  }
+  function markPlayed(score){
+    localStorage.setItem(STORAGE_KEY+':done', JSON.stringify({score, at: Date.now()}));
+  }
+
+  // -------- QUESTIONS --------
+  let pool = [];
+  let session = null;
+  async function loadQuestions(){
+    if(pool.length) return pool;
+    const r = await fetch('questions.json', {cache:'no-store'});
+    const j = await r.json();
+    pool = j.questions;
+    return pool;
+  }
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+  function pickSession(allQs){
+    // Stratified: ~3 website, ~3 easy, ~4 hard
+    const w = shuffle(allQs.filter(q=>q.category==='website')).slice(0,3);
+    const e = shuffle(allQs.filter(q=>q.category==='easy')).slice(0,3);
+    const h = shuffle(allQs.filter(q=>q.category==='hard')).slice(0,4);
+    const all = shuffle(w.concat(e).concat(h)).slice(0, Q_PER_SESSION);
+    // Shuffle option order per question, remembering correct index
+    return all.map(q => {
+      const idx = q.options.map((_,i)=>i);
+      const sIdx = shuffle(idx);
+      const opts = sIdx.map(i => q.options[i]);
+      const correct = sIdx.indexOf(q.correct);
+      return { id:q.id, category:q.category, q:q.q, options:opts, correct, fact:q.fact };
+    });
+  }
+
+  // -------- TIMER --------
+  let timer = { startMs:0, deadlineMs:0, raf:0, paused:false, lastSrAt:0 };
+  function announceSR(text){
+    // Throttled assertive announcement for screen readers (don't spam)
+    const now = Date.now();
+    if(now - timer.lastSrAt < 800) return;
+    timer.lastSrAt = now;
+    $('timer-sr').textContent = text;
+  }
+  function startTimer(onExpire){
+    const ring = $('timer-ring');
+    const numEl = $('timer-num');
+    const fg = ring.querySelector('.fg');
+    const CIRC = 88; // 2*pi*r where r=14
+    timer.startMs = Date.now();
+    timer.deadlineMs = timer.startMs + timerSeconds*1000;
+    timer.paused = false;
+    let lastAnnouncedSec = -1;
+    function tick(){
+      const now = Date.now();
+      const remaining = Math.max(0, timer.deadlineMs - now);
+      const sec = Math.ceil(remaining/1000);
+      numEl.textContent = sec;
+      const pct = remaining / (timerSeconds*1000);
+      fg.style.strokeDashoffset = (CIRC * (1-pct)).toFixed(2);
+      ring.classList.toggle('warn', sec <= 5 && sec > 3);
+      ring.classList.toggle('danger', sec <= 3);
+      // SR announcements at key thresholds only
+      if(sec !== lastAnnouncedSec){
+        if(sec === 5) announceSR('5 seconds left');
+        else if(sec === 3) announceSR('3 seconds');
+        else if(sec === 1) announceSR('1 second');
+        lastAnnouncedSec = sec;
+      }
+      if(remaining <= 0){ stopTimer(); onExpire(); return; }
+      timer.raf = requestAnimationFrame(tick);
+    }
+    tick();
+  }
+  function stopTimer(){
+    if(timer.raf) cancelAnimationFrame(timer.raf);
+    timer.raf = 0;
+  }
+
+  // -------- TAB BLUR ANTI-CHEAT --------
+  let blurStart = 0;
+  document.addEventListener('visibilitychange', () => {
+    if(!session || session.locked) return;
+    if(document.hidden){
+      blurStart = Date.now();
+    }else{
+      if(blurStart && (Date.now() - blurStart) > BLUR_FORFEIT_MS){
+        // Forfeit current question if user was away too long
+        if(!session.answered){
+          forfeitQuestion('blur');
+        }
+      }
+      blurStart = 0;
+    }
+  });
+
+  // -------- QUIZ FLOW --------
+  function renderQuestion(){
+    const q = session.questions[session.idx];
+    session.answered = false;
+    $('q-text').textContent = q.q;
+    const pct = ((session.idx+1)/Q_PER_SESSION*100);
+    $('progress-bar').style.width = pct+'%';
+    $('qcount').textContent = (session.idx+1)+'/'+Q_PER_SESSION;
+    document.querySelector('.progress').setAttribute('aria-valuenow', session.idx+1);
+    const tag = $('q-tag');
+    tag.className = 'qtag';
+    if(q.category==='website'){ tag.textContent = 'GIDF 2026'; tag.classList.add(''); }
+    else if(q.category==='easy'){ tag.textContent = 'Indian Dance · Bollywood'; tag.classList.add('gk'); }
+    else { tag.textContent = 'Expert · Deep Cut'; tag.classList.add('hard'); }
+
+    const ow = $('q-options');
+    ow.innerHTML = '';
+    const letters = ['A','B','C','D'];
+    q.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'opt';
+      btn.innerHTML = `<span class="letter">${letters[i]}</span><span>${opt}</span>`;
+      btn.addEventListener('click', () => answer(i));
+      ow.appendChild(btn);
+    });
+    $('q-fact').classList.remove('show');
+    $('q-fact').innerHTML = '';
+    $('next-wrap').style.display = 'none';
+    startTimer(() => forfeitQuestion('time'));
+  }
+
+  function answer(picked){
+    if(session.answered) return;
+    session.answered = true;
+    stopTimer();
+    const q = session.questions[session.idx];
+    const correct = picked === q.correct;
+    if(correct) session.score++;
+    const opts = $('q-options').querySelectorAll('.opt');
+    opts.forEach((b, i) => {
+      b.disabled = true;
+      if(i === q.correct) b.classList.add('correct');
+      else if(i === picked) b.classList.add('wrong');
+      else b.classList.add('dim');
+    });
+    showFact(correct, q);
+  }
+
+  function forfeitQuestion(reason){
+    if(session.answered) return;
+    session.answered = true;
+    stopTimer();
+    const q = session.questions[session.idx];
+    const opts = $('q-options').querySelectorAll('.opt');
+    opts.forEach((b, i) => {
+      b.disabled = true;
+      if(i === q.correct) b.classList.add('correct');
+      else b.classList.add('dim');
+    });
+    const msg = reason === 'blur' ? "Tab switched — counts as wrong. No Googling 😉" : "Out of time.";
+    const fact = $('q-fact');
+    fact.innerHTML = `<b>${msg}</b> ${q.fact}`;
+    fact.classList.add('show');
+    $('next-wrap').style.display = 'block';
+  }
+
+  function showFact(wasCorrect, q){
+    const fact = $('q-fact');
+    fact.innerHTML = `<b>${wasCorrect ? 'Correct.' : 'Not quite.'}</b> ${q.fact}`;
+    fact.classList.add('show');
+    $('next-wrap').style.display = 'block';
+  }
+
+  function nextQuestion(){
+    session.idx++;
+    if(session.idx >= Q_PER_SESSION){
+      finish();
+    } else {
+      renderQuestion();
+    }
+  }
+
+  async function finish(){
+    session.locked = true;
+    markPlayed(session.score);
+    show('result');
+    $('score-final').textContent = session.score;
+    const msgEl = $('score-msg');
+    const subEl = $('score-sub');
+    const labelEl = $('score-label');
+
+    if(session.score === WIN_SCORE){
+      labelEl.textContent = 'Perfect score';
+      msgEl.textContent = "You're a GIDF nerd. Respect.";
+      subEl.textContent = "Trying to claim your drink voucher…";
+      // Try to claim voucher
+      try{
+        const claim = await GIDFSupabase.claimVoucher({
+          name: session.player.name,
+          ig: session.player.ig,
+          deviceId: session.player.deviceId,
+          score: session.score
+        });
+        if(claim.ok && claim.code){
+          $('voucher-block').style.display = 'block';
+          $('voucher-code').textContent = claim.code;
+          subEl.textContent = "Stop by the bar. Show this code. Cheers.";
+        } else if(claim.alreadyClaimed && claim.code){
+          $('voucher-block').style.display = 'block';
+          $('voucher-code').textContent = claim.code;
+          subEl.textContent = "We already issued you this voucher. Same code, still valid.";
+        } else {
+          $('oos-block').style.display = 'block';
+          subEl.textContent = "All 10 vouchers gone — but you nailed it.";
+        }
+      } catch(e){
+        console.warn('Voucher claim failed', e);
+        $('oos-block').style.display = 'block';
+        subEl.textContent = "(Couldn't reach the scoreboard — show this screen at the bar anyway.)";
+      }
+    } else if(session.score >= 7){
+      labelEl.textContent = 'Great run';
+      msgEl.textContent = "So close. Try harder next year? 😉";
+      subEl.textContent = "Voucher needed 10/10 — but you knew most of it. Share the score.";
+    } else if(session.score >= 4){
+      labelEl.textContent = 'Solid';
+      msgEl.textContent = "Not bad. The festival just got you a bit smarter.";
+      subEl.textContent = "Now go enjoy the actual dance.";
+    } else {
+      labelEl.textContent = 'Eh.';
+      msgEl.textContent = "We won't tell anyone.";
+      subEl.textContent = "Hopefully you learned something. Stay for one more workshop.";
+    }
+
+    // Render share card
+    GIDFShare.render({
+      name: session.player.name,
+      ig: session.player.ig,
+      score: session.score,
+      total: Q_PER_SESSION,
+      isWinner: session.score === WIN_SCORE
+    });
+  }
+
+  // -------- INIT / WIRES --------
+  function init(){
+    if(hasPlayed()){
+      // Already played → straight to result-style lock
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY+':done')||'{}');
+      const player = getStoredPlayer();
+      if(player){
+        session = { questions:[], idx:0, score: stored.score||0, answered:true, locked:true, player };
+        finish();
+        return;
+      }
+    }
+    // Otherwise, landing
+    show('landing');
+    $('btn-start').addEventListener('click', () => {
+      const player = getStoredPlayer();
+      if(player){
+        $('in-name').value = player.name || '';
+        $('in-ig').value = player.ig || '';
+      }
+      show('name');
+    });
+    $('btn-name-go').addEventListener('click', startQuiz);
+    $('btn-share').addEventListener('click', () => GIDFShare.share());
+    $('btn-save').addEventListener('click', () => GIDFShare.save());
+  }
+
+  async function startQuiz(){
+    const name = $('in-name').value.trim();
+    // Strip whitespace, leading @, and any chars outside [A-Za-z0-9._]
+    let ig = $('in-ig').value.trim().replace(/\s+/g,'').replace(/^@/,'').replace(/[^A-Za-z0-9._]/g,'');
+    if(name.length < 1){ $('in-name').focus(); $('in-name').style.borderColor='var(--red)'; return; }
+    if(ig.length < 2){ $('in-ig').focus(); $('in-ig').style.borderColor='var(--red)'; return; }
+    if(hasPlayed()){
+      $('lockout-existing').style.display = 'block';
+      return;
+    }
+    // WCAG 2.2.1 — extended timer if user opted in
+    timerSeconds = $('in-time').checked ? TIMER_EXTENDED : TIMER_DEFAULT;
+    const player = { name, ig, deviceId: getDeviceId() };
+    savePlayer(player);
+    try{
+      await loadQuestions();
+    } catch(e){
+      alert('Could not load questions. Check your connection and refresh.');
+      return;
+    }
+    session = {
+      questions: pickSession(pool),
+      idx: 0,
+      score: 0,
+      answered: false,
+      locked: false,
+      player
+    };
+    show('quiz');
+    renderQuestion();
+  }
+
+  document.addEventListener('click', (e) => {
+    if(e.target && e.target.id === 'btn-next') nextQuestion();
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>

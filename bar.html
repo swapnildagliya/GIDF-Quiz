@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>GIDF Bar · Voucher Redemption</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Hind:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0D0828; --surface:#15103A; --accent:#B5421A; --gold:#C4841A;
+    --green:#4A7C59; --red:#C03030; --t-light:#fff; --t-dim:rgba(255,255,255,.6);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:0;min-height:100dvh;background:var(--bg);color:var(--t-light);font-family:'Inter',sans-serif;display:flex;justify-content:center}
+  .app{width:100%;max-width:480px;padding:32px 22px;display:flex;flex-direction:column;gap:18px}
+  h1{font-family:'Hind',serif;font-weight:700;font-size:30px;letter-spacing:-.02em;margin:0}
+  h1 em{color:var(--accent);font-style:normal}
+  p{color:var(--t-dim);margin:0;line-height:1.5}
+  .card{background:var(--surface);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:14px}
+  label{font-size:12px;font-weight:600;color:var(--t-dim);letter-spacing:.06em;text-transform:uppercase}
+  input{width:100%;padding:14px 16px;border:1.5px solid rgba(255,255,255,.12);border-radius:12px;background:#0A0820;color:#fff;font:700 18px 'Hind',sans-serif;letter-spacing:.06em;text-transform:uppercase}
+  input:focus{outline:none;border-color:var(--accent)}
+  button{appearance:none;border:0;width:100%;padding:16px;border-radius:12px;font:700 16px 'Inter';cursor:pointer}
+  button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+  input:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-color:var(--accent)}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:disabled{background:#444;cursor:not-allowed}
+  .btn-ghost{background:transparent;border:1.5px solid rgba(255,255,255,.18);color:var(--t-light)}
+  .result{padding:18px;border-radius:12px;text-align:center;display:none}
+  .result.ok{background:rgba(74,124,89,.22);border:1px solid var(--green);display:block}
+  .result.warn{background:rgba(196,132,26,.22);border:1px solid var(--gold);display:block}
+  .result.err{background:rgba(192,48,48,.22);border:1px solid var(--red);display:block}
+  .result h2{font-family:'Hind';margin:0 0 6px;font-size:20px}
+  .result .who{font-size:14px;color:var(--t-dim);margin-top:6px}
+  .pin-screen{display:flex;flex-direction:column;gap:16px}
+  small{color:var(--t-dim);font-size:12px;line-height:1.5}
+  .stat{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(255,255,255,.04);border-radius:10px;font-size:13px}
+  .stat b{font-family:'Hind';font-size:18px;color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>GIDF <em>Bar</em><br/>Voucher Redemption</h1>
+  <p>Staff-only. Type the 6-character code shown on the customer's screen.</p>
+
+  <!-- PIN GATE -->
+  <div id="pin-gate" class="card pin-screen">
+    <label for="pin">Staff PIN</label>
+    <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="••••" />
+    <button id="btn-pin" class="btn-primary">Unlock</button>
+    <small>Default PIN <code>4321</code> — change <code>STAFF_PIN</code> in <code>bar.html</code> before deploying. Don't tell punters.</small>
+  </div>
+
+  <!-- REDEMPTION -->
+  <div id="redeem-ui" class="card" style="display:none">
+    <div id="stats" class="stat">
+      <span>Vouchers issued</span><b id="stat-count">—/10</b>
+    </div>
+    <label for="code">Voucher code</label>
+    <input id="code" type="text" autocomplete="off" autocapitalize="characters" maxlength="6" placeholder="XXXXXX" />
+    <button id="btn-redeem" class="btn-primary">Redeem</button>
+    <button id="btn-clear" class="btn-ghost">Clear</button>
+    <div id="result" class="result" role="status" aria-live="polite"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase.js"></script>
+<script>
+(function(){
+  const STAFF_PIN = '4321'; // <-- change me before deploying
+  const $ = (id) => document.getElementById(id);
+
+  $('btn-pin').addEventListener('click', () => {
+    if($('pin').value === STAFF_PIN){
+      $('pin-gate').style.display = 'none';
+      $('redeem-ui').style.display = 'flex';
+      refreshCount();
+    } else {
+      $('pin').value = '';
+      $('pin').style.borderColor = '#C03030';
+      $('pin').placeholder = 'Wrong PIN';
+    }
+  });
+
+  $('btn-redeem').addEventListener('click', redeem);
+  $('btn-clear').addEventListener('click', () => {
+    $('code').value = '';
+    $('result').className = 'result';
+    $('result').innerHTML = '';
+    $('code').focus();
+  });
+
+  async function refreshCount(){
+    try{
+      const remaining = await GIDFSupabase.remainingVouchers();
+      if(remaining != null){
+        $('stat-count').textContent = (10 - remaining) + '/10';
+      }
+    } catch(e){ /* offline → leave dash */ }
+  }
+
+  async function redeem(){
+    const code = $('code').value.toUpperCase().trim();
+    const r = $('result');
+    r.className = 'result';
+    if(code.length !== 6){
+      r.className = 'result err';
+      r.innerHTML = '<h2>Need 6 characters</h2><div class="who">Code is 6 letters/numbers, no spaces.</div>';
+      return;
+    }
+    $('btn-redeem').disabled = true;
+    try{
+      const res = await GIDFSupabase.redeemVoucher(code);
+      if(res.status === 'ok'){
+        r.className = 'result ok';
+        r.innerHTML = '<h2>✅ Redeemed — pour the drink</h2><div class="who">'+ esc(res.name) +' · @'+ esc(res.ig) +'</div>';
+      } else if(res.status === 'already_redeemed'){
+        r.className = 'result warn';
+        r.innerHTML = '<h2>⚠️ Already redeemed</h2><div class="who">'+ esc(res.name) +' · @'+ esc(res.ig) +' — claimed it earlier. No second drink.</div>';
+      } else {
+        r.className = 'result err';
+        r.innerHTML = '<h2>❌ Code not found</h2><div class="who">Double-check the spelling. Real codes are 6 chars, no I/O/0/1.</div>';
+      }
+    } catch(e){
+      r.className = 'result err';
+      r.innerHTML = '<h2>Network error</h2><div class="who">'+ esc(e.message||'Unknown') +'</div>';
+    }
+    $('btn-redeem').disabled = false;
+    refreshCount();
+  }
+
+  function esc(s){ return String(s||'').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+})();
+</script>
+</body>
+</html>
