@@ -1,33 +1,35 @@
 /* =========================================================================
-   GIDF Quiz — Photo-strip selfie
+   GIDF Quiz — Standee Challenge Selfie
    ---------------------------------------------------------------------------
-   Live front-camera + 3-shot burst → photo-booth-style strip with score
-   header + GIDF watermark + @gentindiadansfestival footer.
-   Output: 1080×1920 PNG (IG Stories aspect).
+   60-second challenge: find the GIDF standee, strike a dance pose, snap.
+   Single hero shot (1080×1920) with floating brand stickers + score badge
+   + a "STANDEE CHAMPION · X seconds" gold pill if they made the timer.
    Uses MediaDevices.getUserMedia (HTTPS + camera permission required).
    ========================================================================= */
 (function(){
-  let stream = null;
-  let scoreData = null;       // {name, ig, score, total, isWinner}
-  let lastBlob = null;
+  const CHALLENGE_SECONDS = 60;
+
+  let stream     = null;
+  let scoreData  = null;     // {name, ig, score, total, isWinner}
+  let lastBlob   = null;
   let isCapturing = false;
 
-  // Strip layout (1080 × 1920)
-  const STRIP_W = 1080, STRIP_H = 1920;
-  const HEADER_H = 200;
-  const FRAME_H  = 480;
-  const GAP      = 20;
-  const FOOTER_H = STRIP_H - HEADER_H - 3*FRAME_H - 2*GAP; // 240px
+  // Challenge timing
+  let challengeStartMs    = 0;
+  let challengeDeadlineMs = 0;
+  let challengeRaf        = 0;
+  let captureElapsedMs    = null;  // null until they actually snap
 
   function $(id){ return document.getElementById(id); }
-  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
-  /* --- Open: request camera + show shoot screen --- */
-  async function open(data){
-    scoreData = data;
-    isCapturing = false;
-    // Update live overlay text
-    $('overlay-score-num').textContent  = data.score;
+  /* ─── ENTRY: show intro briefing ─────────────────────────────────── */
+  function open(data){
+    scoreData       = data;
+    isCapturing     = false;
+    captureElapsedMs = null;
+
+    // Update brand overlay text (used during shoot)
+    $('overlay-score-num').textContent   = data.score;
     $('overlay-score-total').textContent = '/' + data.total;
     $('overlay-handle').textContent      = '@gentindiadansfestival';
     $('overlay-headline').textContent    = data.isWinner
@@ -38,207 +40,192 @@
       alert("Your browser doesn't support camera access. Try Safari or Chrome on your phone.");
       return;
     }
+    showIntroMode();
+  }
+
+  /* ─── On Go: request camera + start the 60s clock ────────────────── */
+  async function startChallenge(){
     try{
       stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width:  { ideal: 1080 },
-          height: { ideal: 1920 }
-        },
+        video: { facingMode:'user', width:{ideal:1080}, height:{ideal:1920} },
         audio: false
       });
       const v = $('selfie-video');
       v.srcObject = stream;
-      v.setAttribute('playsinline', '');
+      v.setAttribute('playsinline','');
       v.muted = true;
       await v.play();
+
+      challengeStartMs    = Date.now();
+      challengeDeadlineMs = challengeStartMs + CHALLENGE_SECONDS * 1000;
+      tickChallenge();
+
       showShootMode();
+
     } catch(e){
-      console.error('Selfie camera failed:', e);
+      console.error('Camera failed:', e);
       const msg = (e && e.name === 'NotAllowedError')
         ? "Camera access blocked. Safari → AA icon in URL bar → Website Settings → Camera → Allow. Then try again."
-        : "Couldn't start the camera. Try closing other camera apps and reopening this page.";
+        : "Couldn't start the camera. Close other camera apps and reopen this page.";
       alert(msg);
+      showIntroMode();
     }
   }
 
-  /* --- Burst capture: 3 frames with countdown + flash --- */
-  async function captureBurst(){
+  function tickChallenge(){
+    const now = Date.now();
+    const remaining = Math.max(0, challengeDeadlineMs - now);
+    const sec = Math.ceil(remaining / 1000);
+    const t = $('challenge-timer');
+    if(t){
+      if(remaining <= 0){
+        t.textContent = '⏰ TIME UP — still snap!';
+      } else {
+        const mm = Math.floor(sec / 60).toString().padStart(2,'0');
+        const ss = (sec % 60).toString().padStart(2,'0');
+        t.textContent = `${mm}:${ss}`;
+      }
+      t.classList.toggle('warn',   sec <= 15 && sec > 5);
+      t.classList.toggle('danger', sec <= 5);
+      t.classList.toggle('expired', remaining <= 0);
+    }
+    if(remaining > 0){
+      challengeRaf = requestAnimationFrame(tickChallenge);
+    }
+  }
+  function stopChallengeTimer(){
+    if(challengeRaf) cancelAnimationFrame(challengeRaf);
+    challengeRaf = 0;
+  }
+
+  /* ─── Capture: single hero shot + composite watermark ────────────── */
+  function capture(){
     const v = $('selfie-video');
-    if(!v || !stream || !v.videoWidth){ alert('Camera not ready — give it a sec.'); return; }
+    const c = $('selfie-canvas');
+    if(!v || !c || !stream || !v.videoWidth){ alert('Camera not ready — give it a sec.'); return; }
     if(isCapturing) return;
     isCapturing = true;
 
-    const frames = [];
-    const indicator = $('selfie-indicator');
-    const flash     = $('selfie-flash');
+    captureElapsedMs = Date.now() - challengeStartMs;
+    stopChallengeTimer();
 
-    for(let i = 0; i < 3; i++){
-      // Countdown for this pose
-      indicator.style.display = 'flex';
-      indicator.innerHTML = `<div class="ind-shot">${i+1}<small>of 3</small></div><div class="ind-count">2</div>`;
-      await sleep(700);
-      indicator.querySelector('.ind-count').textContent = '1';
-      await sleep(700);
-      indicator.querySelector('.ind-count').textContent = '📸';
-      await sleep(120);
-
-      // Flash
+    // Flash
+    const flash = $('selfie-flash');
+    if(flash){
       flash.style.transition = 'none';
       flash.style.opacity = '1';
-      // Force reflow
       void flash.offsetHeight;
-      flash.style.transition = 'opacity 280ms ease-out';
+      flash.style.transition = 'opacity 320ms ease-out';
       flash.style.opacity = '0';
-
-      // Capture this frame to a buffer canvas
-      const buf = document.createElement('canvas');
-      buf.width  = v.videoWidth;
-      buf.height = v.videoHeight;
-      const bctx = buf.getContext('2d');
-      // Mirror so it matches what the user saw
-      bctx.save();
-      bctx.scale(-1, 1);
-      bctx.drawImage(v, -buf.width, 0);
-      bctx.restore();
-      frames.push(buf);
-
-      indicator.innerHTML = `<div class="ind-shot">✓ Got it!</div>`;
-      await sleep(450);
     }
 
-    indicator.style.display = 'none';
+    const w = v.videoWidth, h = v.videoHeight;
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    // Mirror so it matches the live preview the user saw
+    ctx.save();
+    ctx.scale(-1, 1);
+    ctx.drawImage(v, -w, 0);
+    ctx.restore();
 
-    // Compose strip
-    composeStrip(frames);
+    drawHeroOverlay(ctx, w, h, scoreData, captureElapsedMs);
+
+    c.toBlob(b => { lastBlob = b; }, 'image/png', 0.92);
 
     closeStream();
     isCapturing = false;
     showPreviewMode();
   }
 
-  /* --- Compose the 1080×1920 strip --- */
-  function composeStrip(frames){
-    const c = $('selfie-canvas');
-    c.width = STRIP_W; c.height = STRIP_H;
-    const ctx = c.getContext('2d');
+  /* ─── Watermark: floating IG-Stories-style stickers on top of the photo ─── */
+  function drawHeroOverlay(ctx, w, h, d, elapsedMs){
+    const isWin = !!d.isWinner;
+    const elapsedSec = Math.round(elapsedMs / 1000);
+    const madeTime = elapsedSec <= CHALLENGE_SECONDS;
 
-    // Background — cream paper
-    ctx.fillStyle = '#F7F0E6';
-    ctx.fillRect(0, 0, STRIP_W, STRIP_H);
+    // ── Top dark gradient strip ──────────────────────────────────────
+    const topH = h * 0.16;
+    const tg = ctx.createLinearGradient(0, 0, 0, topH);
+    tg.addColorStop(0, 'rgba(13,8,40,0.80)');
+    tg.addColorStop(1, 'rgba(13,8,40,0)');
+    ctx.fillStyle = tg;
+    ctx.fillRect(0, 0, w, topH);
 
-    // ─── HEADER (terracotta block) ──────────────────────────────────
-    ctx.fillStyle = '#B5421A';
-    ctx.fillRect(0, 0, STRIP_W, HEADER_H);
-
-    // Subtle gold radial accent in header
-    const hgrad = ctx.createRadialGradient(STRIP_W*0.85, HEADER_H*0.2, 20, STRIP_W*0.85, HEADER_H*0.2, 380);
-    hgrad.addColorStop(0, 'rgba(196,132,26,0.40)');
-    hgrad.addColorStop(1, 'rgba(196,132,26,0)');
-    ctx.fillStyle = hgrad;
-    ctx.fillRect(0, 0, STRIP_W, HEADER_H);
-
-    // Header text — left
+    // Brand line top-left
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = `900 60px "Hind", Cambria, Georgia, serif`;
+    ctx.font = `700 ${Math.round(h * 0.026)}px "Hind", Cambria, Georgia, serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('GIDF 2026', 60, HEADER_H/2 - 20);
-    ctx.font = `500 26px "Inter", system-ui, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.78)';
-    ctx.fillText('1–3 May · Shoonya, Ghent', 60, HEADER_H/2 + 28);
+    ctx.fillText('GIDF 2026 · 1–3 May · Shoonya', w * 0.045, h * 0.045);
 
-    // Score badge — right side of header
-    const badgeR = 70;
-    const bx = STRIP_W - badgeR - 70;
-    const by = HEADER_H/2;
+    // Challenge result pill (top-left, second line)
+    if(madeTime){
+      // Gold "champion" pill
+      const pillTxt = `STANDEE CHAMPION · ${elapsedSec}s`;
+      ctx.font = `900 ${Math.round(h * 0.020)}px "Inter", system-ui, sans-serif`;
+      const pillW = ctx.measureText(pillTxt).width + Math.round(h * 0.03);
+      const pillH = Math.round(h * 0.034);
+      const pillX = w * 0.045;
+      const pillY = h * 0.075;
+      roundRect(ctx, pillX, pillY, pillW, pillH, pillH/2);
+      ctx.fillStyle = '#C4841A'; // gold
+      ctx.fill();
+      ctx.fillStyle = '#0D0828';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pillTxt, pillX + Math.round(h * 0.015), pillY + pillH/2 + 1);
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.72)';
+      ctx.font = `600 ${Math.round(h * 0.019)}px "Inter", sans-serif`;
+      ctx.fillText('STANDEE CHALLENGE · attempted', w * 0.045, h * 0.085);
+    }
+
+    // ── Score badge — top-right circular sticker ─────────────────────
+    const badgeR = h * 0.07;
+    const bx = w - badgeR - w * 0.045;
+    const by = h * 0.085;
     // Outer glow
-    ctx.fillStyle = 'rgba(255,253,248,0.20)';
-    ctx.beginPath(); ctx.arc(bx, by, badgeR + 14, 0, Math.PI*2); ctx.fill();
-    // Disc
-    ctx.fillStyle = '#FFFDF8';
-    ctx.beginPath(); ctx.arc(bx, by, badgeR, 0, Math.PI*2); ctx.fill();
-    // Score number
+    ctx.fillStyle = 'rgba(196,132,26,0.36)';
+    ctx.beginPath(); ctx.arc(bx, by, badgeR * 1.34, 0, Math.PI*2); ctx.fill();
+    // Solid disc — terracotta
     ctx.fillStyle = '#B5421A';
-    ctx.font = `900 76px "Hind", serif`;
+    ctx.beginPath(); ctx.arc(bx, by, badgeR, 0, Math.PI*2); ctx.fill();
+    // Inner thin white ring
+    ctx.strokeStyle = 'rgba(255,255,255,0.42)';
+    ctx.lineWidth  = badgeR * 0.05;
+    ctx.beginPath(); ctx.arc(bx, by, badgeR * 0.86, 0, Math.PI*2); ctx.stroke();
+    // Score number
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `900 ${Math.round(badgeR * 0.95)}px "Hind", Cambria, Georgia, serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(String(scoreData.score), bx, by - 8);
-    ctx.font = `700 22px "Inter", sans-serif`;
-    ctx.fillStyle = 'rgba(28,17,8,0.65)';
-    ctx.fillText('/ ' + scoreData.total, bx, by + 38);
+    ctx.fillText(String(d.score), bx, by - badgeR * 0.07);
+    ctx.font = `700 ${Math.round(badgeR * 0.32)}px "Inter", sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.80)';
+    ctx.fillText('/' + d.total, bx, by + badgeR * 0.44);
 
-    // ─── 3 FRAMES ───────────────────────────────────────────────────
-    let y = HEADER_H;
-    frames.forEach((f, idx) => {
-      // Center-crop the source frame to strip aspect (1080:480 = 2.25:1)
-      const sw = f.width;
-      const sh = f.height;
-      const targetAspect = STRIP_W / FRAME_H;  // 2.25
-      const sourceAspect = sw / sh;
-      let crop_x, crop_y, crop_w, crop_h;
-      if(sourceAspect > targetAspect){
-        // Source is wider — crop sides
-        crop_h = sh;
-        crop_w = sh * targetAspect;
-        crop_x = (sw - crop_w) / 2;
-        crop_y = 0;
-      } else {
-        // Source is taller — crop top/bottom (centred on face area, slightly upper)
-        crop_w = sw;
-        crop_h = sw / targetAspect;
-        crop_x = 0;
-        crop_y = (sh - crop_h) * 0.30; // bias upward — face usually upper-middle
-      }
-      ctx.drawImage(f, crop_x, crop_y, crop_w, crop_h, 0, y, STRIP_W, FRAME_H);
+    // ── Bottom dark strip ────────────────────────────────────────────
+    const botH = h * 0.18;
+    const bg = ctx.createLinearGradient(0, h - botH, 0, h);
+    bg.addColorStop(0, 'rgba(0,0,0,0)');
+    bg.addColorStop(1, 'rgba(0,0,0,0.82)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, h - botH, w, botH);
 
-      // Frame number badge (small, bottom-left of frame)
-      ctx.fillStyle = 'rgba(13,8,40,0.72)';
-      const tagW = 90, tagH = 36;
-      const tagX = 28;
-      const tagY = y + FRAME_H - tagH - 18;
-      roundRect(ctx, tagX, tagY, tagW, tagH, 18);
-      ctx.fill();
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = `700 20px "Inter", sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${idx+1} / 3`, tagX + tagW/2, tagY + tagH/2 + 1);
-
-      y += FRAME_H;
-      if(idx < 2){
-        // Cream gap (already drawn from initial fill)
-        y += GAP;
-      }
-    });
-
-    // ─── FOOTER ─────────────────────────────────────────────────────
-    const fy = HEADER_H + 3*FRAME_H + 2*GAP;
-    ctx.fillStyle = '#0D0828';
-    ctx.fillRect(0, fy, STRIP_W, FOOTER_H);
-
-    // Headline
-    ctx.fillStyle = 'rgba(255,255,255,0.82)';
-    ctx.font = `700 22px "Inter", sans-serif`;
+    // Headline (small caps)
+    ctx.fillStyle = 'rgba(255,255,255,0.78)';
+    ctx.font = `700 ${Math.round(h * 0.020)}px "Inter", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
-    const headline = scoreData.isWinner
+    const headline = isWin
       ? 'PERFECT SCORE · WON A FREE DRINK'
-      : 'TOOK THE GIDF 2026 QUIZ';
-    ctx.fillText(headline, STRIP_W/2, fy + 70);
+      : `SCORE ${d.score}/${d.total} · GIDF 2026 QUIZ`;
+    ctx.fillText(headline, w/2, h - h * 0.085);
 
     // Big handle
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = `900 50px "Inter", sans-serif`;
-    ctx.fillText('@gentindiadansfestival', STRIP_W/2, fy + 130);
-
-    // Sub
-    ctx.fillStyle = 'rgba(255,255,255,0.50)';
-    ctx.font = `500 22px "Inter", sans-serif`;
-    ctx.fillText('gidf.abcdans.com · 1–3 May 2026', STRIP_W/2, fy + 178);
-
-    // Save blob
-    c.toBlob(b => { lastBlob = b; }, 'image/png', 0.92);
+    ctx.font = `900 ${Math.round(h * 0.034)}px "Inter", sans-serif`;
+    ctx.fillText('@gentindiadansfestival', w/2, h - h * 0.04);
   }
 
   function roundRect(ctx, x, y, w, h, r){
@@ -251,7 +238,7 @@
     ctx.closePath();
   }
 
-  /* --- Stop / clean up --- */
+  /* ─── Cleanup / mode switch ──────────────────────────────────────── */
   function closeStream(){
     if(stream){
       stream.getTracks().forEach(t => t.stop());
@@ -259,6 +246,7 @@
     }
     const v = $('selfie-video');
     if(v) v.srcObject = null;
+    stopChallengeTimer();
   }
 
   function exitToResult(){
@@ -269,48 +257,53 @@
   }
 
   function retake(){
-    open(scoreData);
+    closeStream();
+    open(scoreData); // back to intro briefing → fresh 60s timer
   }
 
-  /* --- Share / Save --- */
+  function showIntroMode(){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    $('screen-selfie').classList.add('active');
+    $('selfie-intro').style.display   = 'flex';
+    $('selfie-shoot').style.display   = 'none';
+    $('selfie-preview').style.display = 'none';
+  }
+  function showShootMode(){
+    $('selfie-intro').style.display   = 'none';
+    $('selfie-shoot').style.display   = 'flex';
+    $('selfie-preview').style.display = 'none';
+  }
+  function showPreviewMode(){
+    $('selfie-intro').style.display   = 'none';
+    $('selfie-shoot').style.display   = 'none';
+    $('selfie-preview').style.display = 'flex';
+  }
+
+  /* ─── Share / Save ───────────────────────────────────────────────── */
   async function share(){
     if(!lastBlob){ save(); return; }
-    const file = new File([lastBlob], 'gidf-2026-photo-strip.png', {type:'image/png'});
-    const text = "Just took the GIDF Quiz at @gentindiadansfestival 🌶️ #GIDF2026 #IndianDance";
+    const file = new File([lastBlob], 'gidf-2026-standee.png', {type:'image/png'});
+    const text = "I took the standee challenge at GIDF 2026 🌶️ @gentindiadansfestival #GIDF2026";
     if(navigator.canShare && navigator.canShare({files:[file]})){
       try{
-        await navigator.share({files:[file], title:'GIDF 2026 photo strip', text});
+        await navigator.share({files:[file], title:'GIDF 2026 — Standee Challenge', text});
       } catch(e){ if(e && e.name !== 'AbortError') save(); }
     } else {
       save();
-      alert("Strip saved. Now: open Instagram → Stories → upload from camera roll → tag @gentindiadansfestival.");
+      alert("Image saved. Now: open Instagram → Stories → upload from camera roll → tag @gentindiadansfestival.");
     }
   }
   function save(){
     const c = $('selfie-canvas');
     if(!c) return;
     const link = document.createElement('a');
-    link.download = 'gidf-2026-photo-strip.png';
+    link.download = 'gidf-2026-standee.png';
     link.href = c.toDataURL('image/png');
     link.click();
   }
 
-  /* --- Mode switching --- */
-  function showShootMode(){
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    $('screen-selfie').classList.add('active');
-    $('selfie-shoot').style.display   = 'flex';
-    $('selfie-preview').style.display = 'none';
-  }
-  function showPreviewMode(){
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    $('screen-selfie').classList.add('active');
-    $('selfie-shoot').style.display   = 'none';
-    $('selfie-preview').style.display = 'flex';
-  }
-
-  // Stop the camera on tab hide / page unload
+  // Stop camera if user navigates away
   window.addEventListener('pagehide', closeStream);
 
-  window.GIDFSelfie = { open, capture: captureBurst, retake, share, save, exitToResult };
+  window.GIDFSelfie = { open, startChallenge, capture, retake, share, save, exitToResult };
 })();

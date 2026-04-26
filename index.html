@@ -162,17 +162,31 @@
   .btn-icon:active{background:rgba(0,0,0,.5)}
   .selfie-help{font:500 12.5px 'Inter';color:rgba(255,255,255,.6);text-align:center;line-height:1.4;padding:0 12px}
   .selfie-help b{color:#fff;font-weight:700}
-  /* Countdown indicator over the live video during burst */
-  .selfie-indicator{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#fff;text-shadow:0 4px 16px rgba(0,0,0,.6);pointer-events:none;background:rgba(0,0,0,.18)}
-  .selfie-indicator .ind-shot{font:800 22px 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;background:rgba(181,66,26,.92);padding:6px 18px;border-radius:99px}
-  .selfie-indicator .ind-shot small{display:inline-block;margin-left:6px;opacity:.7;font-size:13px;font-weight:600;text-transform:none;letter-spacing:0}
-  .selfie-indicator .ind-count{font:900 140px 'Hind',serif;line-height:1;letter-spacing:-.04em;color:#fff}
   /* Capture flash */
-  .selfie-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity 280ms ease-out}
-  /* Reduced-motion: skip the flash */
+  .selfie-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity 320ms ease-out}
   @media (prefers-reduced-motion: reduce){
     .selfie-flash{display:none}
   }
+  /* Floating 60-second challenge timer over the live video */
+  .challenge-timer{position:absolute;top:14px;right:14px;background:rgba(13,8,40,.78);color:#fff;font:900 28px/1 'Hind',serif;letter-spacing:-.02em;padding:10px 16px;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.4);font-feature-settings:'tnum';min-width:88px;text-align:center;border:1.5px solid rgba(196,132,26,.35);transition:background .25s, border-color .25s, color .25s}
+  .challenge-timer.warn{background:rgba(196,132,26,.92);color:#0D0828;border-color:#fff}
+  .challenge-timer.danger{background:rgba(192,48,48,.92);color:#fff;border-color:#fff;animation:pulse 600ms infinite}
+  .challenge-timer.expired{background:rgba(13,8,40,.92);color:#C4841A;font-size:18px;letter-spacing:.04em;border-color:rgba(196,132,26,.6);animation:none}
+  @keyframes pulse{0%,100%{transform:scale(1)} 50%{transform:scale(1.06)}}
+  @media (prefers-reduced-motion: reduce){
+    .challenge-timer.danger{animation:none}
+  }
+  /* Intro briefing — pre-camera screen */
+  .selfie-intro{display:none;flex:1;flex-direction:column;justify-content:center;gap:18px;padding:20px 4px;color:#fff;animation:fadeIn .35s ease both}
+  .intro-eyebrow{font:800 12px 'Inter',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+  .intro-title{font:700 38px/1.05 'Hind',Cambria,Georgia,serif;letter-spacing:-.02em;color:#fff;margin:0}
+  .intro-title em{color:var(--accent);font-style:normal}
+  .intro-body{font:400 15px/1.55 'Inter',system-ui,sans-serif;color:rgba(255,255,255,.72);margin:0 0 4px}
+  .intro-body b{color:#fff;font-weight:700}
+  .intro-body em{color:var(--gold);font-style:normal;font-weight:600}
+  /* Ghost button variant for use on dark selfie screens */
+  .btn-ghost.btn-on-dark{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18);color:#fff}
+  .btn-ghost.btn-on-dark:hover{background:rgba(255,255,255,.12)}
 </style>
 </head>
 <body>
@@ -336,7 +350,7 @@
     <!-- Share card preview canvas -->
     <canvas id="share-canvas" class="share-card" width="1080" height="1920"></canvas>
 
-    <button id="btn-selfie" class="btn btn-primary">📸 Photo strip with your score</button>
+    <button id="btn-selfie" class="btn btn-primary">🏃 Selfie at the GIDF Standee · 60s</button>
     <button id="btn-share" class="btn btn-ghost">📲 Share score card to Stories</button>
     <button id="btn-save" class="btn btn-ghost">⬇ Save score card</button>
     <button id="btn-replay" class="btn btn-dark" style="display:none">↺ Play again</button>
@@ -348,14 +362,23 @@
     </div>
   </section>
 
-  <!-- =========== SELFIE =========== -->
+  <!-- =========== SELFIE / STANDEE CHALLENGE =========== -->
   <section id="screen-selfie" class="screen">
     <header class="brand">
-      <span class="dot"></span> Selfie with your score <small>Camera</small>
+      <span class="dot"></span> Standee Challenge <small>60s · GIDF</small>
     </header>
 
-    <!-- SHOOT MODE -->
-    <div id="selfie-shoot" class="selfie-stage">
+    <!-- INTRO MODE — challenge briefing -->
+    <div id="selfie-intro" class="selfie-intro">
+      <div class="intro-eyebrow">📍 Find the GIDF Standee</div>
+      <h2 class="intro-title">60 seconds.<br/>Your <em>best dance pose.</em></h2>
+      <p class="intro-body">Tap <b>Go</b>, the timer starts. Run to the GIDF standee somewhere at Shoonya, frame your shot with the standee in it, and snap your best pose before the clock runs out.<br/><br/>Camera permission required — your phone, your photo, posted only if <em>you</em> share it.</p>
+      <button id="btn-challenge-go" class="btn btn-primary">▶︎ Go · start the 60s</button>
+      <button id="btn-challenge-cancel" class="btn btn-ghost btn-on-dark">Cancel — back to score</button>
+    </div>
+
+    <!-- SHOOT MODE — live camera + 60s timer -->
+    <div id="selfie-shoot" class="selfie-stage" style="display:none">
       <video id="selfie-video" autoplay playsinline muted></video>
       <div class="selfie-overlay">
         <div class="overlay-top">
@@ -373,20 +396,20 @@
           <div id="overlay-handle">@gentindiadansfestival</div>
         </div>
       </div>
-      <!-- Countdown indicator (shown during burst capture) -->
-      <div id="selfie-indicator" class="selfie-indicator" aria-live="polite"></div>
-      <!-- Flash overlay (briefly white on capture) -->
+      <!-- Big floating challenge timer -->
+      <div id="challenge-timer" class="challenge-timer" aria-live="polite">01:00</div>
+      <!-- Flash overlay -->
       <div id="selfie-flash" class="selfie-flash"></div>
     </div>
 
-    <p class="selfie-help" id="selfie-shoot-help">
-      <b>Photo strip · 3 quick poses</b> · countdown 2-1-snap × 3 · tap the big circle to start
+    <p class="selfie-help" id="selfie-shoot-help" style="display:none">
+      <b>Find the standee · pose · tap to snap</b>
     </p>
 
-    <div class="capture-row" id="capture-row-shoot">
-      <button id="btn-selfie-cancel" class="btn-icon" aria-label="Cancel selfie">✕</button>
-      <button id="btn-capture" class="btn-capture" aria-label="Capture selfie"></button>
-      <button id="btn-selfie-cancel-2" class="btn-icon" style="visibility:hidden" aria-hidden="true"></button>
+    <div class="capture-row" id="capture-row-shoot" style="display:none">
+      <button id="btn-selfie-cancel" class="btn-icon" aria-label="Cancel">✕</button>
+      <button id="btn-capture" class="btn-capture" aria-label="Capture"></button>
+      <button class="btn-icon" style="visibility:hidden" aria-hidden="true"></button>
     </div>
 
     <!-- PREVIEW MODE -->
@@ -396,9 +419,9 @@
 
     <div id="selfie-preview-actions" style="display:none;flex-direction:column;gap:10px">
       <button id="btn-selfie-share" class="btn btn-primary">📲 Share to Instagram Stories</button>
-      <button id="btn-selfie-save" class="btn btn-ghost" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);color:#fff">⬇ Save to camera roll</button>
-      <button id="btn-selfie-retake" class="btn btn-ghost" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);color:#fff">↺ Retake</button>
-      <button id="btn-selfie-done" class="btn-icon" style="width:auto;height:auto;border-radius:99px;padding:10px 18px;font-weight:600;border-color:rgba(255,255,255,.2);margin-top:4px">Done — back to result</button>
+      <button id="btn-selfie-save" class="btn btn-ghost btn-on-dark">⬇ Save to camera roll</button>
+      <button id="btn-selfie-retake" class="btn btn-ghost btn-on-dark">↺ Try the challenge again</button>
+      <button id="btn-selfie-done" class="btn btn-ghost btn-on-dark">Done — back to score</button>
     </div>
   </section>
 
@@ -848,9 +871,27 @@
     $('btn-share').addEventListener('click', () => GIDFShare.share());
     $('btn-save').addEventListener('click', () => GIDFShare.save());
 
-    // ----- Selfie wires -----
+    // ----- Standee Challenge selfie wires -----
+    function showShootControls(){
+      $('capture-row-shoot').style.display    = 'flex';
+      $('selfie-shoot-help').style.display    = 'block';
+      $('selfie-preview-actions').style.display = 'none';
+    }
+    function showPreviewControls(){
+      $('capture-row-shoot').style.display    = 'none';
+      $('selfie-shoot-help').style.display    = 'none';
+      $('selfie-preview-actions').style.display = 'flex';
+    }
+    function resetSelfieUI(){
+      $('capture-row-shoot').style.display    = 'none';
+      $('selfie-shoot-help').style.display    = 'none';
+      $('selfie-preview-actions').style.display = 'none';
+    }
+
+    // Result screen → open intro briefing
     $('btn-selfie').addEventListener('click', () => {
       if(!session || !session.player) return;
+      resetSelfieUI();
       GIDFSelfie.open({
         name: session.player.name,
         ig: session.player.ig,
@@ -859,33 +900,39 @@
         isWinner: session.score === WIN_SCORE
       });
     });
-    $('btn-capture').addEventListener('click', () => {
-      // Toggle the preview-actions panel after capture
-      GIDFSelfie.capture();
-      $('capture-row-shoot').style.display = 'none';
-      $('selfie-shoot-help').style.display = 'none';
-      $('selfie-preview-actions').style.display = 'flex';
+    // Intro: Go → start 60s challenge + camera
+    $('btn-challenge-go').addEventListener('click', async () => {
+      await GIDFSelfie.startChallenge();
+      showShootControls();
     });
+    // Intro: Cancel → back to result
+    $('btn-challenge-cancel').addEventListener('click', () => {
+      GIDFSelfie.exitToResult();
+      resetSelfieUI();
+    });
+    // Shoot: Capture → take photo + show preview controls
+    $('btn-capture').addEventListener('click', () => {
+      GIDFSelfie.capture();
+      showPreviewControls();
+    });
+    // Shoot: Cancel
     $('btn-selfie-cancel').addEventListener('click', () => {
       GIDFSelfie.exitToResult();
-      // Reset selfie UI state for next time
-      $('capture-row-shoot').style.display = 'flex';
-      $('selfie-shoot-help').style.display = 'block';
-      $('selfie-preview-actions').style.display = 'none';
+      resetSelfieUI();
     });
+    // Preview: Share
     $('btn-selfie-share').addEventListener('click', () => GIDFSelfie.share());
+    // Preview: Save
     $('btn-selfie-save').addEventListener('click', () => GIDFSelfie.save());
+    // Preview: Retake → back to intro briefing (fresh 60s)
     $('btn-selfie-retake').addEventListener('click', () => {
-      $('selfie-preview-actions').style.display = 'none';
-      $('capture-row-shoot').style.display = 'flex';
-      $('selfie-shoot-help').style.display = 'block';
+      resetSelfieUI();
       GIDFSelfie.retake();
     });
+    // Preview: Done → back to result
     $('btn-selfie-done').addEventListener('click', () => {
       GIDFSelfie.exitToResult();
-      $('capture-row-shoot').style.display = 'flex';
-      $('selfie-shoot-help').style.display = 'block';
-      $('selfie-preview-actions').style.display = 'none';
+      resetSelfieUI();
     });
     $('btn-replay').addEventListener('click', () => {
       // Reset session, reuse stored player + go straight to quiz
