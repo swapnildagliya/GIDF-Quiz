@@ -17,8 +17,8 @@
 (function(){
   // ---------- CONFIG ----------
   const CONFIG = {
-    SUPABASE_URL:  '',  // e.g. 'https://abcd1234.supabase.co'
-    SUPABASE_ANON: '',  // anon/public key — safe to publish
+    SUPABASE_URL:  'https://mhmvrjvlqxvrmtrqrlqo.supabase.co',
+    SUPABASE_ANON: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1obXZyanZscXh2cm10cnFybHFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMjQzMTMsImV4cCI6MjA5MjgwMDMxM30.U-scevlxIBGfyWQ24WHFF67yHhwDVeMXrHC-4opjC3A',
     MAX_VOUCHERS:  10
   };
   // ----------------------------
