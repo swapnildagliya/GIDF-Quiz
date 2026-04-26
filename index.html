@@ -522,11 +522,41 @@
     return a;
   }
   function pickSession(allQs){
-    // Stratified: ~3 website, ~3 easy, ~4 hard
-    const w = shuffle(allQs.filter(q=>q.category==='website')).slice(0,3);
-    const e = shuffle(allQs.filter(q=>q.category==='easy')).slice(0,3);
-    const h = shuffle(allQs.filter(q=>q.category==='hard')).slice(0,4);
-    const all = shuffle(w.concat(e).concat(h)).slice(0, Q_PER_SESSION);
+    // Stratified split (4 website + 3 easy + 3 hard = 10):
+    //   1 question tagged 'gidf'    (festival rituals/history/manifesto)
+    //   1 question tagged 'swapnil' (curator)
+    //   1 question tagged 'faculty' (other teachers)
+    //   1 wildcard from remaining website pool (any tag — Madhuri / extra GIDF / etc.)
+    //   3 easy GK + 3 hard expert
+    const websites = allQs.filter(q => q.category === 'website');
+    const easies   = allQs.filter(q => q.category === 'easy');
+    const hards    = allQs.filter(q => q.category === 'hard');
+    const byTag = (tag) => websites.filter(q => Array.isArray(q.tags) && q.tags.includes(tag));
+
+    // Pull one from each required tag, avoiding duplicates across slots
+    const used = new Set();
+    function pickFromPool(pool){
+      const candidates = shuffle(pool.filter(q => !used.has(q.id)));
+      if(!candidates.length){
+        // Defensive fallback: pool was already exhausted by overlapping tags
+        const all = shuffle(websites.filter(q => !used.has(q.id)));
+        if(!all.length) return null;
+        used.add(all[0].id);
+        return all[0];
+      }
+      used.add(candidates[0].id);
+      return candidates[0];
+    }
+    const gidf    = pickFromPool(byTag('gidf'));
+    const swap    = pickFromPool(byTag('swapnil'));
+    const fac     = pickFromPool(byTag('faculty'));
+    const wild    = pickFromPool(websites); // any remaining website question
+
+    const wQs = [gidf, swap, fac, wild].filter(Boolean);
+    const eQs = shuffle(easies).slice(0, 3);
+    const hQs = shuffle(hards).slice(0, 3);
+    const all = shuffle(wQs.concat(eQs).concat(hQs)).slice(0, Q_PER_SESSION);
+
     // Shuffle option order per question, remembering correct index
     return all.map(q => {
       const idx = q.options.map((_,i)=>i);
