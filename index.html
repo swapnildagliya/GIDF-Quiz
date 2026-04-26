@@ -162,6 +162,17 @@
   .btn-icon:active{background:rgba(0,0,0,.5)}
   .selfie-help{font:500 12.5px 'Inter';color:rgba(255,255,255,.6);text-align:center;line-height:1.4;padding:0 12px}
   .selfie-help b{color:#fff;font-weight:700}
+  /* Countdown indicator over the live video during burst */
+  .selfie-indicator{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#fff;text-shadow:0 4px 16px rgba(0,0,0,.6);pointer-events:none;background:rgba(0,0,0,.18)}
+  .selfie-indicator .ind-shot{font:800 22px 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;background:rgba(181,66,26,.92);padding:6px 18px;border-radius:99px}
+  .selfie-indicator .ind-shot small{display:inline-block;margin-left:6px;opacity:.7;font-size:13px;font-weight:600;text-transform:none;letter-spacing:0}
+  .selfie-indicator .ind-count{font:900 140px 'Hind',serif;line-height:1;letter-spacing:-.04em;color:#fff}
+  /* Capture flash */
+  .selfie-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity 280ms ease-out}
+  /* Reduced-motion: skip the flash */
+  @media (prefers-reduced-motion: reduce){
+    .selfie-flash{display:none}
+  }
 </style>
 </head>
 <body>
@@ -325,7 +336,7 @@
     <!-- Share card preview canvas -->
     <canvas id="share-canvas" class="share-card" width="1080" height="1920"></canvas>
 
-    <button id="btn-selfie" class="btn btn-primary">📸 Take a selfie with your score</button>
+    <button id="btn-selfie" class="btn btn-primary">📸 Photo strip with your score</button>
     <button id="btn-share" class="btn btn-ghost">📲 Share score card to Stories</button>
     <button id="btn-save" class="btn btn-ghost">⬇ Save score card</button>
     <button id="btn-replay" class="btn btn-dark" style="display:none">↺ Play again</button>
@@ -362,10 +373,14 @@
           <div id="overlay-handle">@gentindiadansfestival</div>
         </div>
       </div>
+      <!-- Countdown indicator (shown during burst capture) -->
+      <div id="selfie-indicator" class="selfie-indicator" aria-live="polite"></div>
+      <!-- Flash overlay (briefly white on capture) -->
+      <div id="selfie-flash" class="selfie-flash"></div>
     </div>
 
     <p class="selfie-help" id="selfie-shoot-help">
-      <b>Frame your face</b> · the score badge stays in your shot · big tap = capture
+      <b>Photo strip · 3 quick poses</b> · countdown 2-1-snap × 3 · tap the big circle to start
     </p>
 
     <div class="capture-row" id="capture-row-shoot">
