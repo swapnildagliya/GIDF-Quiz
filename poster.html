@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>GIDF 2026 Quiz · QR Poster</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Hind:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* --- GIDF brand tokens (matched from gidf.abcdans.com) --- */
+  :root{
+    --bg:#F7F0E6; --surface:#FFFDF8;
+    --accent:#B5421A; --gold:#C4841A;
+    --text:#1C1108; --t2:#6B5840;
+    --nav-dark:#0D0828;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:#888;padding:30px 0;color:var(--text)}
+  /* --- Print-ready A4 page (210 × 297 mm) --- */
+  .page{
+    width:210mm; height:297mm;
+    background:var(--bg);
+    margin:0 auto;
+    padding:24mm 18mm;
+    display:flex; flex-direction:column;
+    box-shadow:0 4px 24px rgba(0,0,0,.4);
+  }
+  /* --- Header --- */
+  .head{display:flex;align-items:center;gap:10px;font-family:'Hind',serif;font-weight:700;color:var(--accent);font-size:14pt;letter-spacing:-.005em}
+  .head .dot{width:11pt;height:11pt;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(181,66,26,.18)}
+  .head small{margin-left:auto;color:var(--t2);font-family:'Inter';font-weight:500;font-size:9pt;letter-spacing:.06em;text-transform:uppercase}
+
+  /* --- Hero --- */
+  .hero{margin-top:14mm}
+  .kicker{font-family:'Inter';font-weight:800;font-size:12pt;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:5mm}
+  h1{font-family:'Hind',serif;font-weight:700;font-size:64pt;line-height:.95;letter-spacing:-.025em;color:var(--text)}
+  h1 em{color:var(--accent);font-style:normal}
+  .sub{font-family:'Hind',serif;font-weight:500;font-size:18pt;line-height:1.25;margin-top:6mm;color:var(--t2)}
+
+  /* --- QR Block --- */
+  .qrwrap{
+    margin:12mm auto 0;
+    width:115mm; padding:8mm; background:var(--surface);
+    border:2px solid var(--accent); border-radius:4mm;
+    box-shadow:0 4mm 12mm rgba(28,17,8,.10);
+    display:flex; flex-direction:column; align-items:center; gap:6mm;
+  }
+  .qrwrap img{width:100%; height:auto; display:block; image-rendering:crisp-edges}
+  .qrlabel{font-family:'Inter';font-weight:700;font-size:11pt;letter-spacing:.10em;text-transform:uppercase;color:var(--accent);text-align:center}
+  .qrlabel .arrow{color:var(--gold);margin:0 4px}
+
+  /* --- Rules row --- */
+  .rules{display:flex;justify-content:space-between;gap:6mm;margin-top:10mm;padding:0 5mm}
+  .rule{flex:1;text-align:center}
+  .rule .num{font-family:'Hind',serif;font-weight:700;font-size:30pt;color:var(--accent);line-height:1;letter-spacing:-.03em}
+  .rule .lbl{font-family:'Inter';font-weight:600;font-size:9.5pt;color:var(--t2);margin-top:2mm;letter-spacing:.05em;text-transform:uppercase;line-height:1.3}
+
+  /* --- Footer --- */
+  .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;padding-top:8mm;border-top:1px solid rgba(28,17,8,.15)}
+  .foot .left{font-family:'Inter';font-size:9pt;color:var(--t2);line-height:1.5}
+  .foot .left b{color:var(--text);font-weight:700;font-size:10pt}
+  .foot .right{font-family:'Hind',serif;font-weight:700;font-size:11pt;color:var(--accent);text-align:right}
+  .foot .right .ig{color:var(--t2);font-family:'Inter';font-weight:600;font-size:8.5pt;letter-spacing:.04em;margin-top:2mm}
+
+  /* --- Print --- */
+  @page{ size:A4 portrait; margin:0 }
+  @media print{
+    body{background:#fff;padding:0}
+    .page{box-shadow:none;margin:0}
+  }
+  /* Screen-only print hint */
+  .print-hint{
+    position:fixed; top:14px; left:50%; transform:translateX(-50%);
+    background:var(--accent); color:#fff; padding:8px 18px; border-radius:99px;
+    font-family:'Inter';font-weight:600;font-size:12px;letter-spacing:.04em;
+    box-shadow:0 4px 16px rgba(0,0,0,.25); z-index:99;
+  }
+  @media print { .print-hint{display:none} }
+</style>
+</head>
+<body>
+
+<div class="print-hint">Cmd/Ctrl + P to print · A4 portrait, no margins</div>
+
+<div class="page">
+
+  <header class="head">
+    <span class="dot"></span> GIDF 2026 Quiz <small>1–3 May · Shoonya, Ghent</small>
+  </header>
+
+  <div class="hero">
+    <div class="kicker">Take the quiz · Win a drink</div>
+    <h1>Earn your<br/><em>free drink.</em></h1>
+    <p class="sub">A speed-trivia run across Indian dance, Bollywood, and GIDF itself.<br/>Score a perfect 10/10 — claim a free drink at the bar.</p>
+  </div>
+
+  <div class="qrwrap">
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=900x900&margin=8&ecc=H&color=B5421A&bgcolor=FFFDF8&data=https://swapnildagliya.github.io/GIDF-Quiz/" alt="Scan to play GIDF Quiz" />
+    <div class="qrlabel">Open camera <span class="arrow">→</span> point at code <span class="arrow">→</span> tap link</div>
+  </div>
+
+  <div class="rules">
+    <div class="rule">
+      <div class="num">10</div>
+      <div class="lbl">Questions<br/>per round</div>
+    </div>
+    <div class="rule">
+      <div class="num">10s</div>
+      <div class="lbl">Per question<br/>no Googling</div>
+    </div>
+    <div class="rule">
+      <div class="num">10/10</div>
+      <div class="lbl">Wins a<br/>free drink</div>
+    </div>
+    <div class="rule">
+      <div class="num">10</div>
+      <div class="lbl">Vouchers<br/>all weekend</div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <div class="left">
+      <b>One go per person · 10 vouchers total</b><br/>
+      Show your code at the bar to redeem.<br/>
+      Pass this QR to a friend — every quiz is different.
+    </div>
+    <div class="right">
+      gidf.abcdans.com
+      <div class="ig">@gentindiadansfestival</div>
+    </div>
+  </footer>
+
+</div>
+
+</body>
+</html>

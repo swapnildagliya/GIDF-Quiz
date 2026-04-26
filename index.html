@@ -129,6 +129,8 @@
   .pill{display:inline-block;padding:6px 12px;border-radius:99px;background:var(--surface);border:1px solid var(--border);font:600 12px 'Inter';color:var(--t2);letter-spacing:.04em;text-transform:uppercase}
   .lockout{padding:22px;text-align:center;background:var(--red-tint);border:1px solid var(--red-border);border-radius:var(--r-md);color:var(--red-deep)}
   .lockout b{display:block;font-size:18px;font-family:'Hind';margin-bottom:6px}
+  /* Test-mode badge — only shown when ?test=1 is in URL */
+  .test-badge{position:fixed;top:max(8px, env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:var(--gold);color:#fff;padding:6px 14px;border-radius:99px;font:700 10.5px 'Inter';letter-spacing:.06em;text-transform:uppercase;z-index:99;box-shadow:0 4px 12px rgba(196,132,26,.35);max-width:92vw;text-align:center}
 </style>
 </head>
 <body>
@@ -321,6 +323,10 @@
   const WIN_SCORE = 10;
   const STORAGE_KEY = 'gidf_quiz_v1';
 
+  // ----- TEST MODE: ?test=1 in URL → unlimited retries, no Supabase write -----
+  const TEST_MODE = new URLSearchParams(window.location.search).get('test') === '1';
+  if(TEST_MODE) console.log('GIDF Quiz: TEST MODE active — retries unlocked, voucher claims faked.');
+
   const $ = (id) => document.getElementById(id);
   const screens = ['landing','name','quiz','result'];
   function show(name){
@@ -344,9 +350,11 @@
     localStorage.setItem(STORAGE_KEY+':player', JSON.stringify(p));
   }
   function hasPlayed(){
+    if(TEST_MODE) return false; // unlimited retries in test mode
     return !!localStorage.getItem(STORAGE_KEY+':done');
   }
   function markPlayed(score){
+    if(TEST_MODE) return; // never persist in test mode
     localStorage.setItem(STORAGE_KEY+':done', JSON.stringify({score, at: Date.now()}));
   }
 
@@ -448,6 +456,7 @@
   // -------- QUIZ FLOW --------
   function renderQuestion(){
     const q = session.questions[session.idx];
+    if(!q){ console.error('GIDF: No question at idx', session.idx); return; }
     session.answered = false;
     $('q-text').textContent = q.q;
     const pct = ((session.idx+1)/Q_PER_SESSION*100);
@@ -456,16 +465,25 @@
     document.querySelector('.progress').setAttribute('aria-valuenow', session.idx+1);
     const tag = $('q-tag');
     tag.className = 'qtag';
-    if(q.category==='website'){ tag.textContent = 'GIDF 2026'; tag.classList.add(''); }
+    if(q.category==='website'){ tag.textContent = 'GIDF 2026'; }
     else if(q.category==='easy'){ tag.textContent = 'Indian Dance · Bollywood'; tag.classList.add('gk'); }
     else { tag.textContent = 'Expert · Deep Cut'; tag.classList.add('hard'); }
 
+    // Belt-and-suspenders option rebuild — Safari has occasionally been seen to
+    // skip innerHTML='' under heavy event timing. Use both removeChild loop AND
+    // replaceChildren() to guarantee a clean slate before appending new buttons.
     const ow = $('q-options');
-    ow.innerHTML = '';
+    while(ow.firstChild) ow.removeChild(ow.firstChild);
+    if(typeof ow.replaceChildren === 'function') ow.replaceChildren();
+    void ow.offsetHeight; // force reflow so the empty state is committed
     const letters = ['A','B','C','D'];
-    q.options.forEach((opt, i) => {
+    const opts = Array.isArray(q.options) ? q.options.slice(0,4) : [];
+    opts.forEach((opt, i) => {
       const btn = document.createElement('button');
       btn.className = 'opt';
+      btn.type = 'button';
+      btn.dataset.qid = q.id;
+      btn.dataset.optIdx = i;
       btn.innerHTML = `<span class="letter">${letters[i]}</span><span>${opt}</span>`;
       btn.addEventListener('click', () => answer(i));
       ow.appendChild(btn);
@@ -539,31 +557,37 @@
     if(session.score === WIN_SCORE){
       labelEl.textContent = 'Perfect score';
       msgEl.textContent = "You're a GIDF nerd. Respect.";
-      subEl.textContent = "Trying to claim your drink voucher…";
-      // Try to claim voucher
-      try{
-        const claim = await GIDFSupabase.claimVoucher({
-          name: session.player.name,
-          ig: session.player.ig,
-          deviceId: session.player.deviceId,
-          score: session.score
-        });
-        if(claim.ok && claim.code){
-          $('voucher-block').style.display = 'block';
-          $('voucher-code').textContent = claim.code;
-          subEl.textContent = "Stop by the bar. Show this code. Cheers.";
-        } else if(claim.alreadyClaimed && claim.code){
-          $('voucher-block').style.display = 'block';
-          $('voucher-code').textContent = claim.code;
-          subEl.textContent = "We already issued you this voucher. Same code, still valid.";
-        } else {
+      if(TEST_MODE){
+        // Test mode: fake voucher, skip Supabase to preserve real stock
+        $('voucher-block').style.display = 'block';
+        $('voucher-code').textContent = 'TEST00';
+        subEl.textContent = "Test mode — voucher NOT issued. Real stock untouched.";
+      } else {
+        subEl.textContent = "Trying to claim your drink voucher…";
+        try{
+          const claim = await GIDFSupabase.claimVoucher({
+            name: session.player.name,
+            ig: session.player.ig,
+            deviceId: session.player.deviceId,
+            score: session.score
+          });
+          if(claim.ok && claim.code){
+            $('voucher-block').style.display = 'block';
+            $('voucher-code').textContent = claim.code;
+            subEl.textContent = "Stop by the bar. Show this code. Cheers.";
+          } else if(claim.alreadyClaimed && claim.code){
+            $('voucher-block').style.display = 'block';
+            $('voucher-code').textContent = claim.code;
+            subEl.textContent = "We already issued you this voucher. Same code, still valid.";
+          } else {
+            $('oos-block').style.display = 'block';
+            subEl.textContent = "All 10 vouchers gone — but you nailed it.";
+          }
+        } catch(e){
+          console.warn('Voucher claim failed', e);
           $('oos-block').style.display = 'block';
-          subEl.textContent = "All 10 vouchers gone — but you nailed it.";
+          subEl.textContent = "(Couldn't reach the scoreboard — show this screen at the bar anyway.)";
         }
-      } catch(e){
-        console.warn('Voucher claim failed', e);
-        $('oos-block').style.display = 'block';
-        subEl.textContent = "(Couldn't reach the scoreboard — show this screen at the bar anyway.)";
       }
     } else if(session.score >= 7){
       labelEl.textContent = 'Great run';
@@ -591,6 +615,13 @@
 
   // -------- INIT / WIRES --------
   function init(){
+    // Show test-mode badge if active
+    if(TEST_MODE){
+      const b = document.createElement('div');
+      b.className = 'test-badge';
+      b.textContent = 'TEST MODE · retries unlocked · vouchers not issued';
+      document.body.appendChild(b);
+    }
     if(hasPlayed()){
       // Already played → straight to result-style lock
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY+':done')||'{}');
@@ -648,8 +679,18 @@
     renderQuestion();
   }
 
+  // Debounced Next click — prevents double-tap from skipping a question render
+  let nextLock = false;
   document.addEventListener('click', (e) => {
-    if(e.target && e.target.id === 'btn-next') nextQuestion();
+    const t = e.target;
+    if(!t) return;
+    // Walk up to handle clicks on inner spans of #btn-next, if any
+    const btn = t.id === 'btn-next' ? t : (t.closest && t.closest('#btn-next'));
+    if(btn && !nextLock){
+      nextLock = true;
+      setTimeout(() => { nextLock = false; }, 350);
+      nextQuestion();
+    }
   });
 
   init();
