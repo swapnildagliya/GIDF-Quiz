@@ -38,7 +38,7 @@
     width:210mm; height:297mm;
     background:var(--bg);
     margin:0 auto;
-    padding:24mm 18mm;
+    padding:18mm 18mm 16mm;
     display:flex; flex-direction:column;
     box-shadow:var(--shadow-card);
     /* Force home/office printers to honour brand colours, not "optimise" them */
@@ -47,30 +47,30 @@
   }
 
   /* === Header ======================================================== */
-  .head{display:flex;align-items:center;gap:10px;font-family:var(--serif-stack);font-weight:700;color:var(--accent);font-size:14pt;letter-spacing:-.005em}
-  .head .dot{width:11pt;height:11pt;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(181,66,26,.18)}
+  .head{display:flex;align-items:center;gap:10px;font-family:var(--serif-stack);font-weight:700;color:var(--accent);font-size:13pt;letter-spacing:-.005em}
+  .head .dot{width:10pt;height:10pt;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(181,66,26,.18)}
   .head small{margin-left:auto;color:var(--t2);font-family:var(--sans-stack);font-weight:500;font-size:9pt;letter-spacing:.06em;text-transform:uppercase}
 
   /* === Hero ========================================================== */
-  .hero{margin-top:14mm}
-  h1{font-family:var(--serif-stack);font-weight:700;font-size:64pt;line-height:.95;letter-spacing:-.025em;color:var(--text)}
+  .hero{margin-top:8mm}
+  h1{font-family:var(--serif-stack);font-weight:700;font-size:54pt;line-height:.95;letter-spacing:-.025em;color:var(--text)}
   h1 em{color:var(--accent);font-style:normal}
-  .sub{font-family:var(--serif-stack);font-weight:500;font-size:18pt;line-height:1.25;margin-top:6mm;color:var(--t2)}
+  .sub{font-family:var(--serif-stack);font-weight:500;font-size:15pt;line-height:1.25;margin-top:4mm;color:var(--t2)}
 
   /* === QR Block ====================================================== */
   .qrwrap{
-    margin:11mm auto 0;
-    width:115mm; padding:8mm 8mm 6mm; background:var(--surface);
-    border:2px solid var(--accent); border-radius:4mm;
+    margin:7mm auto 0;
+    width:100mm; padding:5mm 5mm 4mm; background:var(--surface);
+    border:2px solid var(--accent); border-radius:3mm;
     box-shadow:var(--shadow-soft);
-    display:flex; flex-direction:column; align-items:center; gap:5mm;
+    display:flex; flex-direction:column; align-items:center; gap:4mm;
   }
   .qrwrap img{width:100%; height:auto; display:block; image-rendering:crisp-edges}
-  .qrlabel{font-family:var(--sans-stack);font-weight:700;font-size:11pt;letter-spacing:.10em;text-transform:uppercase;color:var(--accent);text-align:center}
-  .qrlabel .arrow{color:var(--gold);margin:0 4px}
+  .qrlabel{font-family:var(--sans-stack);font-weight:700;font-size:9.5pt;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);text-align:center;line-height:1.3}
+  .qrlabel .arrow{color:var(--gold);margin:0 3px}
   /* URL fallback for when QRs fail (camera, lighting, smudged ink) */
   .qrurl{
-    font-family:var(--mono-stack);font-size:10pt;font-weight:600;
+    font-family:var(--mono-stack);font-size:9pt;font-weight:600;
     color:var(--t2);text-align:center;line-height:1.3;
     padding-top:2mm;border-top:1px solid var(--divider);width:100%;
   }
@@ -78,16 +78,16 @@
 
   /* === Rules strip =================================================== */
   .rules{
-    margin-top:9mm;padding:5mm 6mm;
+    margin-top:6mm;padding:4mm 5mm;
     background:var(--surface);border-left:3px solid var(--gold);border-radius:2mm;
-    font-family:var(--sans-stack);font-weight:600;font-size:11pt;color:var(--t2);
+    font-family:var(--sans-stack);font-weight:600;font-size:10pt;color:var(--t2);
     line-height:1.5;letter-spacing:.005em;
   }
   .rules b{color:var(--text);font-weight:700}
   .rules .sep{color:var(--gold);margin:0 .4em;font-weight:800}
 
   /* === Footer ======================================================== */
-  .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;padding-top:7mm;border-top:1px solid var(--divider)}
+  .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;padding-top:5mm;border-top:1px solid var(--divider)}
   .foot .left{font-family:var(--sans-stack);font-size:9pt;color:var(--t2);line-height:1.5}
   .foot .left b{color:var(--text);font-weight:700;font-size:10pt}
   .foot .right{font-family:var(--serif-stack);font-weight:700;font-size:11pt;color:var(--accent);text-align:right}

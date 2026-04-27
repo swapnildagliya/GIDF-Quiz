@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>GIDF Bar Staff · Cheat Sheet</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=Hind:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F0E6; --surface:#FFFDF8;
+    --accent:#B5421A; --gold:#C4841A;
+    --text:#1C1108; --t2:#6B5840;
+    --nav-dark:#0D0828;
+    --green:#4A7C59; --red:#C03030;
+    --serif-stack:'Hind','Cambria',Georgia,serif;
+    --sans-stack:'Inter',system-ui,sans-serif;
+    --mono-stack:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans-stack);background:#888;padding:20px 0;color:var(--text)}
+  /* A5 portrait — 148 × 210 mm — half an A4. Print 2 per A4 sheet. */
+  .page{
+    width:148mm; height:210mm;
+    background:var(--bg);
+    margin:0 auto;
+    padding:11mm 12mm 10mm;
+    display:flex; flex-direction:column;
+    box-shadow:0 4px 24px rgba(0,0,0,.4);
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+  .head{display:flex;align-items:center;gap:8px;color:var(--accent);font:700 11pt var(--serif-stack)}
+  .head .dot{width:9pt;height:9pt;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(181,66,26,.18)}
+  .head small{margin-left:auto;color:var(--t2);font:500 8pt var(--sans-stack);text-transform:uppercase;letter-spacing:.06em}
+
+  h1{font:700 22pt/1 var(--serif-stack);letter-spacing:-.02em;margin-top:5mm}
+  h1 em{color:var(--accent);font-style:normal}
+  .lede{font:500 9.5pt var(--serif-stack);color:var(--t2);margin-top:1.5mm;line-height:1.4}
+
+  /* === Access block: QR + PIN side by side ============================ */
+  .access{
+    display:grid;grid-template-columns:auto 1fr;gap:5mm;
+    margin-top:5mm;padding:4mm;
+    background:var(--surface);border:1.5px solid var(--nav-dark);border-radius:3mm;
+    align-items:stretch;
+  }
+  .qr-box{display:flex;flex-direction:column;align-items:center;gap:1.5mm}
+  .qr-box img{width:36mm;height:36mm;display:block}
+  .qr-caption{font:700 7pt var(--sans-stack);letter-spacing:.10em;text-transform:uppercase;color:var(--nav-dark);text-align:center;line-height:1.2}
+  .qr-caption b{color:var(--accent)}
+  .pin-box{display:flex;flex-direction:column;justify-content:center;gap:2mm;border-left:1px solid rgba(28,17,8,.15);padding-left:5mm}
+  .pin-box label{font:700 7.5pt var(--sans-stack);letter-spacing:.10em;text-transform:uppercase;color:var(--accent)}
+  .pin-box .pin-value{font:900 26pt/1 var(--serif-stack);color:var(--text);letter-spacing:.10em;font-feature-settings:'tnum'}
+  .pin-box .pin-hint{font:500 8pt var(--sans-stack);color:var(--t2);line-height:1.35}
+  .pin-box .url{font:600 7.5pt var(--mono-stack);color:var(--t2);word-break:break-all;line-height:1.3}
+  .pin-box .url b{color:var(--text);font-weight:700}
+
+  /* === Steps ========================================================== */
+  .steps{margin-top:4mm;display:flex;flex-direction:column;gap:2mm}
+  .step{display:flex;gap:3mm;align-items:flex-start}
+  .step .n{flex-shrink:0;width:7mm;height:7mm;border-radius:50%;background:var(--accent);color:#fff;font:800 10pt var(--serif-stack);display:grid;place-items:center}
+  .step .body{font:500 9pt var(--sans-stack);color:var(--text);line-height:1.4;padding-top:.7mm}
+  .step .body b{font-weight:700}
+  .step .body code{font:700 8.5pt var(--mono-stack);background:rgba(28,17,8,.06);padding:.5mm 1.5mm;border-radius:1mm;color:var(--text)}
+
+  /* === Result colours ================================================= */
+  .results{margin-top:4mm;background:var(--nav-dark);color:#fff;border-radius:3mm;padding:4mm;display:flex;flex-direction:column;gap:2mm}
+  .results h3{font:700 8pt var(--sans-stack);letter-spacing:.10em;text-transform:uppercase;color:var(--gold);margin-bottom:.5mm}
+  .res-row{display:flex;align-items:flex-start;gap:3mm;font:500 8.5pt var(--sans-stack);line-height:1.35}
+  .res-row .pill{flex-shrink:0;font:800 7.5pt var(--sans-stack);padding:1mm 2.5mm;border-radius:99px;letter-spacing:.04em;text-transform:uppercase;min-width:14mm;text-align:center}
+  .pill.green{background:var(--green);color:#fff}
+  .pill.warn{background:var(--gold);color:#0D0828}
+  .pill.red{background:var(--red);color:#fff}
+  .res-row b{color:#fff;font-weight:700}
+
+  /* === Tip about staying logged in ==================================== */
+  .tip{margin-top:3.5mm;padding:3mm;background:rgba(196,132,26,.10);border-left:3px solid var(--gold);border-radius:1.5mm;font:500 8pt var(--sans-stack);color:var(--text);line-height:1.4}
+  .tip b{font-weight:700}
+
+  .foot{margin-top:auto;font:500 7pt var(--sans-stack);color:var(--t2);line-height:1.45;border-top:1px solid rgba(28,17,8,.15);padding-top:3mm}
+  .foot b{color:var(--text);font-weight:700}
+
+  @page{ size:A5 portrait; margin:0 }
+  @media print{ body{background:#fff;padding:0} .page{box-shadow:none;margin:0} .print-hint{display:none} *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important } }
+  .print-hint{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:8px 18px;border-radius:99px;font:600 12px var(--sans-stack);box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:99}
+  @media (max-width:700px){
+    body{padding:0}
+    .page{transform-origin:top center;transform:scale(calc((100vw - 16px) / 559));margin-bottom:calc(-210mm + ((100vw - 16px) / 559) * 210mm)}
+  }
+</style>
+</head>
+<body>
+<div class="print-hint">Cmd/Ctrl + P · A5 portrait, no margins (or 2-up on A4)</div>
+
+<main class="page">
+  <header class="head">
+    <span class="dot"></span> GIDF 2026 · Bar Staff <small>1–3 May · Shoonya</small>
+  </header>
+
+  <h1>How to <em>redeem a free drink.</em></h1>
+  <p class="lede">A customer scores 10/10 on the GIDF Quiz, gets a 6-character code on their phone, walks up to the bar. Verify, mark used, pour.</p>
+
+  <div class="access">
+    <div class="qr-box">
+      <img src="bar-qr.png" alt="Scan to open the bar redemption page" />
+      <div class="qr-caption"><b>Scan</b> to open</div>
+    </div>
+    <div class="pin-box">
+      <label>Staff PIN — type once per shift</label>
+      <div class="pin-value">419032</div>
+      <div class="pin-hint">After scanning the QR, type the PIN once. The page stays unlocked for the rest of your shift — leave the tab open.</div>
+      <div class="url">URL fallback: <b>swapnildagliya.github.io/GIDF-Quiz/bar.html</b></div>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div class="body"><b>Scan the QR</b> with your phone camera. Tap the link. Type the PIN. Tap <b>Unlock</b>.</div></div>
+    <div class="step"><div class="n">2</div><div class="body">Customer shows you a <b>6-character code</b> on their phone (e.g. <code>K7FR2X</code>). Codes never use <b>I, O</b> or <b>0, 1</b> — they're easy to read.</div></div>
+    <div class="step"><div class="n">3</div><div class="body">Type the code, tap <b>Redeem</b>. The colour tells you what to do ↓</div></div>
+  </div>
+
+  <div class="results">
+    <h3>Result colour = action</h3>
+    <div class="res-row"><span class="pill green">✅ Green</span><div><b>Redeemed.</b> Pour the drink. Customer's name + IG shown.</div></div>
+    <div class="res-row"><span class="pill warn">⚠️ Yellow</span><div><b>Already redeemed.</b> They tried twice. <b>Don't pour</b> — wave them off politely.</div></div>
+    <div class="res-row"><span class="pill red">❌ Red</span><div><b>Code not found</b> or wrong format. Re-check the spelling. If still red, the code is fake.</div></div>
+  </div>
+
+  <div class="tip">
+    <b>Working multiple days?</b> Add the page to your phone's home screen. iPhone: tap <b>Share</b> → <b>Add to Home Screen</b>. Android: tap menu → <b>Add to Home screen</b>. Now it's a one-tap shortcut — no QR scanning needed on Day 2 or 3.
+  </div>
+
+  <footer class="foot">
+    <b>10 vouchers total across the whole weekend.</b> The page shows live count. Tap <b>Clear</b> between codes. Network blip? Wait 5s — your tap was probably saved. <b>Questions:</b> ping Swapnil.
+  </footer>
+</main>
+</body>
+</html>

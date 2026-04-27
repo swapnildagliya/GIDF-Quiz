@@ -184,6 +184,15 @@
   .intro-body{font:400 15px/1.55 'Inter',system-ui,sans-serif;color:rgba(255,255,255,.72);margin:0 0 4px}
   .intro-body b{color:#fff;font-weight:700}
   .intro-body em{color:var(--gold);font-style:normal;font-weight:600}
+  .intro-poses{font-size:34px;letter-spacing:14px;text-align:center;animation:posebounce 1.6s ease-in-out infinite;margin:6px 0 6px;line-height:1}
+  @keyframes posebounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  /* Dance-pose prompt — over the live camera, pulsing */
+  .pose-prompt{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);background:rgba(13,8,40,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;padding:8px 16px;border-radius:99px;display:flex;align-items:center;gap:10px;font:800 13px 'Inter',sans-serif;letter-spacing:.10em;text-transform:uppercase;border:1.5px solid rgba(196,132,26,.55);box-shadow:0 6px 20px rgba(0,0,0,.4);animation:posepulse 1.8s ease-in-out infinite;pointer-events:none}
+  .pose-prompt .pose-emoji{font-size:18px;letter-spacing:0}
+  @keyframes posepulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.95}50%{transform:translate(-50%,-50%) scale(1.05);opacity:1}}
+  @media (prefers-reduced-motion: reduce){
+    .intro-poses, .pose-prompt{animation:none}
+  }
   /* Ghost button variant for use on dark selfie screens */
   .btn-ghost.btn-on-dark{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18);color:#fff}
   .btn-ghost.btn-on-dark:hover{background:rgba(255,255,255,.12)}
@@ -370,9 +379,10 @@
 
     <!-- INTRO MODE — challenge briefing -->
     <div id="selfie-intro" class="selfie-intro">
-      <div class="intro-eyebrow">📍 Find the GIDF Standee</div>
-      <h2 class="intro-title">60 seconds.<br/>Your <em>best dance pose.</em></h2>
-      <p class="intro-body">Tap <b>Go</b>, the timer starts. Run to the GIDF standee somewhere at Shoonya, frame your shot with the standee in it, and snap your best pose before the clock runs out.<br/><br/>Camera permission required — your phone, your photo, posted only if <em>you</em> share it.</p>
+      <div class="intro-eyebrow">📍 Standee Challenge</div>
+      <h2 class="intro-title">60 seconds.<br/>Find the standee.<br/><em>Strike a pose.</em></h2>
+      <p class="intro-body">Tap <b>Go</b> and the timer starts. <em>Run</em> to the GIDF standee somewhere at Shoonya, then strike your <b>best dance pose</b> with the standee in frame. Snap before the clock runs out.<br/><br/>Faster = smaller number on your "Standee Champion" pill. Best times will be flexed all weekend.</p>
+      <div class="intro-poses" aria-hidden="true">💃 🕺 ✨</div>
       <button id="btn-challenge-go" class="btn btn-primary">▶︎ Go · start the 60s</button>
       <button id="btn-challenge-cancel" class="btn btn-ghost btn-on-dark">Cancel — back to score</button>
     </div>
@@ -396,6 +406,12 @@
           <div id="overlay-handle">@gentindiadansfestival</div>
         </div>
       </div>
+      <!-- Dance-pose prompt — pulses near the centre of the live preview -->
+      <div id="pose-prompt" class="pose-prompt" aria-hidden="true">
+        <span class="pose-emoji">💃</span>
+        <span class="pose-text">STRIKE A POSE</span>
+        <span class="pose-emoji">🕺</span>
+      </div>
       <!-- Big floating challenge timer -->
       <div id="challenge-timer" class="challenge-timer" aria-live="polite">01:00</div>
       <!-- Flash overlay -->
@@ -403,7 +419,7 @@
     </div>
 
     <p class="selfie-help" id="selfie-shoot-help" style="display:none">
-      <b>Find the standee · pose · tap to snap</b>
+      <b>Find the standee · strike your dance pose · tap to snap</b>
     </p>
 
     <div class="capture-row" id="capture-row-shoot" style="display:none">
