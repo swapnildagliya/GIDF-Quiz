@@ -1,103 +1,97 @@
 /* =========================================================================
    GIDF Quiz — Share card (canvas-based PNG for IG Stories)
-   1080×1920 portrait card.
+   1080×1920 portrait card · Shoonya Design System v1.
+   - Solid terracotta foundation (the vibrant treated as a color block)
+   - Playfair Display Medium for headlines · Inter Regular for body
+   - No bold weights (Medium 500 is the max per design system)
    - Web Share API for direct IG Stories on iOS/Android
-   - Falls back to download for desktop
    ========================================================================= */
 (function(){
   const W = 1080, H = 1920;
+  const SERIF = '"Playfair Display", Cambria, Georgia, serif';
+  const SANS  = '"Inter", system-ui, sans-serif';
+  const TERRA = '#B5421A';
   let lastBlob = null;
   let lastKey  = null;  // memoize render across identical inputs
 
   function render({name, ig, score, total, isWinner}){
     const key = JSON.stringify({name, ig, score, total, isWinner});
-    if(key === lastKey) return; // skip identical redraws
+    if(key === lastKey) return;
     lastKey = key;
     const canvas = document.getElementById('share-canvas');
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    // Background gradient — two-stop, on-brand (nav-dark → accent)
-    const grad = ctx.createLinearGradient(0, 0, W, H);
-    grad.addColorStop(0, '#0D0828');  // --nav-dark
-    grad.addColorStop(1, '#B5421A');  // --accent
-    ctx.fillStyle = grad;
+    // Solid terracotta foundation — the vibrant as a colour block per §03
+    ctx.fillStyle = TERRA;
     ctx.fillRect(0,0,W,H);
 
-    // Soft glow blobs
-    radialBlob(ctx,  900,  300, 600, 'rgba(196,132,26,0.32)'); // gold
-    radialBlob(ctx,  150, 1700, 500, 'rgba(181,66,26,0.42)');  // accent
-
     // Top brand
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.font = '700 44px "Hind", serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.font = `500 44px ${SERIF}`;
     ctx.textAlign = 'left';
     ctx.fillText('GIDF 2026 · Gent India Dans Festival', 80, 140);
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.font = '500 32px "Inter", sans-serif';
-    ctx.fillText('1–3 May · Shoonya Dance Centre, Ghent', 80, 190);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = `400 30px ${SANS}`;
+    ctx.fillText('1–3 May · Shoonya Dance Centre, Ghent', 80, 188);
 
-    // Vertical divider line
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-    ctx.lineWidth = 2;
+    // Hairline divider
+    ctx.strokeStyle = 'rgba(255,255,255,0.20)';
+    ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(80, 230); ctx.lineTo(W-80, 230); ctx.stroke();
 
-    // Hero label
-    ctx.fillStyle = '#C4841A';
-    ctx.font = '800 36px "Inter", sans-serif';
+    // Hero label — caps eyebrow
+    ctx.fillStyle = 'rgba(255,255,255,0.78)';
+    ctx.font = `500 32px ${SANS}`;
     ctx.fillText(isWinner ? 'I WON A FREE DRINK' : 'I TOOK THE GIDF QUIZ', 80, 320);
 
-    // Score — giant
+    // Giant score number — Playfair Medium
     ctx.fillStyle = '#fff';
-    ctx.font = '900 360px "Hind", serif';
+    ctx.font = `500 360px ${SERIF}`;
     ctx.textAlign = 'left';
     ctx.fillText(String(score), 80, 720);
 
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = '700 200px "Hind", serif';
-    const scoreW = ctx.measureText(String(score)).width;
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = `400 200px ${SERIF}`;
     ctx.fillText('/'+total, 80 + scoreOffset(score), 720);
 
-    // Score label
+    // Score subtitle in italic Playfair
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.font = '700 44px "Hind", serif';
+    ctx.font = `italic 400 44px ${SERIF}`;
     ctx.fillText(scoreSubtitle(score, total, isWinner), 80, 820);
 
     // Middle quote / description
-    ctx.fillStyle = 'rgba(255,255,255,0.78)';
-    ctx.font = '500 38px "Inter", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = `italic 400 38px ${SERIF}`;
     wrapText(ctx, scoreFlavor(score, total, isWinner), 80, 980, W-160, 56);
 
-    // Player line
+    // Player line — small
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.font = '600 30px "Inter", sans-serif';
+    ctx.font = `400 30px ${SANS}`;
     ctx.fillText('— ' + (name || 'Anon') + ' (@' + ((ig||'').replace(/^@/,'')) + ')', 80, 1240);
 
-    // Big bottom card
-    roundRect(ctx, 80, 1340, W-160, 380, 36);
-    ctx.fillStyle = 'rgba(255,255,255,0.10)';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-    ctx.lineWidth = 2;
+    // Bottom card — outlined, no fill
+    roundRect(ctx, 80, 1340, W-160, 380, 28);
+    ctx.strokeStyle = 'rgba(255,255,255,0.30)';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
     ctx.fillStyle = '#fff';
-    ctx.font = '800 60px "Hind", serif';
+    ctx.font = `500 60px ${SERIF}`;
     ctx.fillText('Try the quiz.', 130, 1450);
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.font = '500 36px "Inter", sans-serif';
-    wrapText(ctx, 'Scan a QR around Shoonya. 10 questions · 10 seconds each. Perfect score = free drink.', 130, 1520, W-260, 50);
+    ctx.font = `400 32px ${SANS}`;
+    wrapText(ctx, 'Scan a QR around Shoonya. 10 questions · 10 seconds each. Perfect score = free drink.', 130, 1520, W-260, 46);
 
     // Footer tag
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.font = '700 36px "Inter", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.font = `500 36px ${SANS}`;
     ctx.textAlign = 'center';
     ctx.fillText('@gentindiadansfestival', W/2, 1820);
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = '500 28px "Inter", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = `400 26px ${SANS}`;
     ctx.fillText('gidf.abcdans.com', W/2, 1870);
 
-    // Save blob for sharing
     canvas.toBlob(b => { lastBlob = b; }, 'image/png');
   }
 
@@ -107,10 +101,10 @@
   }
 
   function scoreSubtitle(score, total, isWinner){
-    if(isWinner) return 'PERFECT SCORE · ' + total + '/' + total;
-    if(score >= 7) return 'NEARLY PERFECT';
-    if(score >= 4) return 'NOT BAD';
-    return 'CAME FOR THE DANCE, NOT THE QUIZ';
+    if(isWinner) return 'Perfect score · ' + total + '/' + total;
+    if(score >= 7) return 'Nearly perfect';
+    if(score >= 4) return 'Not bad';
+    return 'Came for the dance, not the quiz';
   }
 
   function scoreFlavor(score, total, isWinner){
@@ -121,13 +115,6 @@
   }
 
   // ---------- canvas helpers ----------
-  function radialBlob(ctx, x, y, r, color){
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, color);
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
-  }
   function roundRect(ctx, x, y, w, h, r){
     ctx.beginPath();
     ctx.moveTo(x+r, y);
@@ -165,17 +152,11 @@
 
       if(navigator.canShare && navigator.canShare({files:[file]})){
         try{
-          await navigator.share({
-            files:[file],
-            title:'GIDF 2026 Quiz',
-            text
-          });
+          await navigator.share({ files:[file], title:'GIDF 2026 Quiz', text });
         } catch(e){
-          // User cancelled or share failed → fall through to download
           if(e && e.name !== 'AbortError') save();
         }
       } else {
-        // Desktop / older mobile fallback
         save();
         alert("Image saved. Now: open Instagram → Stories → upload from camera roll → tag @gentindiadansfestival.");
       }

@@ -153,30 +153,31 @@
 
     // Brand line top-left
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = `700 ${Math.round(h * 0.026)}px "Hind", Cambria, Georgia, serif`;
+    ctx.font = `500 ${Math.round(h * 0.026)}px "Playfair Display", Cambria, Georgia, serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText('GIDF 2026 · 1–3 May · Shoonya', w * 0.045, h * 0.045);
 
     // Challenge result pill (top-left, second line)
     if(madeTime){
-      // Gold "champion" pill
+      // White-on-black pill — design system §03: one vibrant per design,
+      // so we use a foundation colour (black) for the pill rather than a second vibrant
       const pillTxt = `STANDEE CHAMPION · ${elapsedSec}s`;
-      ctx.font = `900 ${Math.round(h * 0.020)}px "Inter", system-ui, sans-serif`;
+      ctx.font = `500 ${Math.round(h * 0.020)}px "Inter", system-ui, sans-serif`;
       const pillW = ctx.measureText(pillTxt).width + Math.round(h * 0.03);
       const pillH = Math.round(h * 0.034);
       const pillX = w * 0.045;
       const pillY = h * 0.075;
       roundRect(ctx, pillX, pillY, pillW, pillH, pillH/2);
-      ctx.fillStyle = '#C4841A'; // gold
+      ctx.fillStyle = '#FFFFFF';
       ctx.fill();
-      ctx.fillStyle = '#0D0828';
+      ctx.fillStyle = '#B5421A'; // terracotta text on white pill — single vibrant kept
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(pillTxt, pillX + Math.round(h * 0.015), pillY + pillH/2 + 1);
     } else {
       ctx.fillStyle = 'rgba(255,255,255,0.72)';
-      ctx.font = `600 ${Math.round(h * 0.019)}px "Inter", sans-serif`;
+      ctx.font = `500 ${Math.round(h * 0.019)}px "Inter", sans-serif`;
       ctx.fillText('STANDEE CHALLENGE · attempted', w * 0.045, h * 0.085);
     }
 
@@ -184,9 +185,9 @@
     const badgeR = h * 0.07;
     const bx = w - badgeR - w * 0.045;
     const by = h * 0.085;
-    // Outer glow
-    ctx.fillStyle = 'rgba(196,132,26,0.36)';
-    ctx.beginPath(); ctx.arc(bx, by, badgeR * 1.34, 0, Math.PI*2); ctx.fill();
+    // Soft white outer halo (no second vibrant)
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.beginPath(); ctx.arc(bx, by, badgeR * 1.30, 0, Math.PI*2); ctx.fill();
     // Solid disc — terracotta
     ctx.fillStyle = '#B5421A';
     ctx.beginPath(); ctx.arc(bx, by, badgeR, 0, Math.PI*2); ctx.fill();
@@ -196,11 +197,11 @@
     ctx.beginPath(); ctx.arc(bx, by, badgeR * 0.86, 0, Math.PI*2); ctx.stroke();
     // Score number
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = `900 ${Math.round(badgeR * 0.95)}px "Hind", Cambria, Georgia, serif`;
+    ctx.font = `500 ${Math.round(badgeR * 0.95)}px "Playfair Display", Cambria, Georgia, serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(String(d.score), bx, by - badgeR * 0.07);
-    ctx.font = `700 ${Math.round(badgeR * 0.32)}px "Inter", sans-serif`;
+    ctx.font = `500 ${Math.round(badgeR * 0.32)}px "Inter", sans-serif`;
     ctx.fillStyle = 'rgba(255,255,255,0.80)';
     ctx.fillText('/' + d.total, bx, by + badgeR * 0.44);
 
@@ -214,7 +215,7 @@
 
     // Headline (small caps)
     ctx.fillStyle = 'rgba(255,255,255,0.78)';
-    ctx.font = `700 ${Math.round(h * 0.020)}px "Inter", sans-serif`;
+    ctx.font = `500 ${Math.round(h * 0.020)}px "Inter", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     const headline = isWin
@@ -224,7 +225,7 @@
 
     // Big handle
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = `900 ${Math.round(h * 0.034)}px "Inter", sans-serif`;
+    ctx.font = `500 ${Math.round(h * 0.034)}px "Inter", sans-serif`;
     ctx.fillText('@gentindiadansfestival', w/2, h - h * 0.04);
   }
 
